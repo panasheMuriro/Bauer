@@ -2,7 +2,7 @@ package main
 
 import (
 	"context"
-	"encoding/json"
+	"flag"
 	"fmt"
 	"log/slog"
 	"os"
@@ -17,11 +17,13 @@ import (
 
 // Hardcoded Google Doc URL for POC
 // Format: https://docs.google.com/document/d/{documentId}/edit
-const googleDocURL = ""
+// Can be overridden via GOOGLE_DOC_URL environment variable
+var googleDocURL = ""
 
 // Hardcoded email for credentials delegation
 // This email is used to delegate service account credentials to access the document
-const delegationEmail = ""
+// Can be overridden via DELEGATION_EMAIL environment variable
+var delegationEmail = ""
 
 // Set to false to use direct service account access (document must be shared with service account)
 // Set to true to use domain-wide delegation (requires admin setup)
@@ -959,107 +961,33 @@ func main() {
 	}))
 	slog.SetDefault(logger)
 
+	// Parse command-line flags
+	flag.Parse()
+
 	ctx := context.Background()
 
-	slog.Info("Starting Google Docs POC",
-		slog.String("doc_url", googleDocURL),
-	)
-
-	// Extract document ID from URL
-	docID, err := extractDocumentID(googleDocURL)
-	if err != nil {
-		slog.Error("Failed to extract document ID", slog.String("error", err.Error()))
-		os.Exit(1)
-	}
-	slog.Info("Extracted document ID", slog.String("doc_id", docID))
-
-	// Build services
-	// If useDelegation is true, will impersonate delegationEmail via domain-wide delegation
-	// If useDelegation is false, service account accesses document directly (must be shared with it)
-	email := delegationEmail
-	docsService, err := buildDocsService(ctx, &email, useDelegation)
-	if err != nil {
-		slog.Error("Failed to build Docs service", slog.String("error", err.Error()))
-		os.Exit(1)
-	}
-	if useDelegation {
-		slog.Info("Docs service created successfully", slog.String("delegated_to", email))
-	} else {
-		slog.Info("Docs service created successfully (direct service account access)")
+	// Load environment variables from .env files
+	if err := loadEnv(); err != nil {
+		slog.Warn("Failed to load .env files", slog.String("error", err.Error()))
 	}
 
-	driveService, err := buildDriveService(ctx, &email, useDelegation)
-	if err != nil {
-		slog.Error("Failed to build Drive service", slog.String("error", err.Error()))
-		os.Exit(1)
-	}
-	if useDelegation {
-		slog.Info("Drive service created successfully", slog.String("delegated_to", email))
-	} else {
-		slog.Info("Drive service created successfully (direct service account access)")
+	// Override googleDocURL and delegationEmail from environment variables if set
+	if docURL := os.Getenv("GOOGLE_DOC_URL"); docURL != "" {
+		googleDocURL = docURL
+		slog.Info("Using GOOGLE_DOC_URL from environment", slog.String("url", googleDocURL))
 	}
 
-	// Fetch document content with suggestions inline
-	slog.Info("Fetching document content with suggestions inline...")
-	doc, err := fetchDocumentContent(ctx, docsService, docID)
+	if email := os.Getenv("DELEGATION_EMAIL"); email != "" {
+		delegationEmail = email
+		slog.Info("Using DELEGATION_EMAIL from environment", slog.String("email", delegationEmail))
+	}
+
+	// Use the workflow function which handles everything
+	err := ProcessAndCreatePR(ctx, googleDocURL, *createPRFlag)
 	if err != nil {
-		slog.Error("Failed to fetch document", slog.String("error", err.Error()))
+		slog.Error("Failed to process PR", slog.String("error", err.Error()))
 		os.Exit(1)
 	}
 
-	slog.Info("Document fetched successfully",
-		slog.String("title", doc.Title),
-		slog.String("document_id", doc.DocumentId),
-	)
-
-	// Extract suggestions from document
-	suggestions := extractSuggestions(doc)
-	slog.Info("Suggestions extracted",
-		slog.Int("count", len(suggestions)),
-	)
-
-	// Fetch comments from Drive API
-	slog.Info("Fetching comments from Drive API...")
-	comments, err := fetchComments(ctx, driveService, docID)
-	if err != nil {
-		slog.Error("Failed to fetch comments", slog.String("error", err.Error()))
-		// Don't exit - comments might not be accessible but we still have suggestions
-	} else {
-		slog.Info("Comments fetched", slog.Int("count", len(comments)))
-	}
-
-	// Extract metadata table from document
-	metadata := extractMetadataTable(doc)
-	if metadata != nil {
-		slog.Info("Metadata table extracted", slog.Int("field_count", len(metadata.Raw)))
-	}
-
-	// Build document structure for context lookups
-	docStructure := buildDocumentStructure(doc)
-	slog.Info("Document structure built",
-		slog.Int("headings", len(docStructure.Headings)),
-		slog.Int("tables", len(docStructure.Tables)),
-	)
-
-	// Build actionable suggestions with full context
-	actionableSuggestions := buildActionableSuggestions(suggestions, docStructure, metadata)
-
-	// Output machine-readable JSON
-	// This is the primary output - designed for LLM consumption
-	output := struct {
-		DocumentTitle         string                 `json:"document_title"`
-		DocumentID            string                 `json:"document_id"`
-		Metadata              *MetadataTable         `json:"metadata,omitempty"`
-		ActionableSuggestions []ActionableSuggestion `json:"actionable_suggestions"`
-		Comments              []Comment              `json:"comments"`
-	}{
-		DocumentTitle:         doc.Title,
-		DocumentID:            doc.DocumentId,
-		Metadata:              metadata,
-		ActionableSuggestions: actionableSuggestions,
-		Comments:              comments,
-	}
-
-	outputJSON, _ := json.MarshalIndent(output, "", "  ")
-	fmt.Println(string(outputJSON))
+	slog.Info("Process completed successfully")
 }
