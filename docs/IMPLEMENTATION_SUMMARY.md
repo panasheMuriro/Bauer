@@ -116,23 +116,35 @@ The system uses two environment files for configuration (loaded in order):
 GITHUB_TOKEN=ghp_xxxxxxxxxxxx
 GITHUB_REPO_OWNER=canonical
 GITHUB_REPO_NAME=ubuntu.com
+
+GOOGLE_DOC_URL=https://docs.google.com/document/d/YOUR_DOC_ID/edit
+DELEGATION_EMAIL=your-service-account@your-project.iam.gserviceaccount.com
 ```
 
 **`.env.local`** (local overrides, should NOT be committed):
 ```
 GITHUB_TOKEN=ghp_your_personal_token
+GOOGLE_DOC_URL=https://docs.google.com/document/d/your_actual_doc_id/edit
+DELEGATION_EMAIL=your-actual-service-account@project.iam.gserviceaccount.com
 ```
+
+**Environment Variables**:
+- `GITHUB_TOKEN` - GitHub personal access token for PR creation (required for `--create-pr`)
+- `GITHUB_REPO_OWNER` - Repository owner (defaults to `canonical`)
+- `GITHUB_REPO_NAME` - Repository name (defaults to `ubuntu.com`)
+- `GOOGLE_DOC_URL` - Google Docs URL to extract suggestions from (optional, has hardcoded default)
+- `DELEGATION_EMAIL` - Service account email for domain-wide delegation (optional, has hardcoded default)
 
 **How it works**: 
 - `.env` is loaded first (default/shared config)
 - `.env.local` is loaded second (local overrides)
 - Later values override earlier ones
-- So if both files define `GITHUB_TOKEN`, the value from `.env.local` is used
+- If both files define `GITHUB_TOKEN`, the value from `.env.local` is used
 
 This pattern allows:
 - ✅ Shared defaults in `.env` (version controlled)
-- ✅ Personal tokens in `.env.local` (git ignored)
-- ✅ Team members can use different tokens without conflicts
+- ✅ Personal tokens and URLs in `.env.local` (git ignored)
+- ✅ Team members can use different tokens/docs without conflicts
 
 ## How It Works
 
@@ -292,8 +304,12 @@ Four documentation files created:
 
 ### Local Development
 ```bash
-# 1. Create your local .env.local file with your token
-echo "GITHUB_TOKEN=ghp_your_token" > .env.local
+# 1. Create your local .env.local file with configuration
+cat > .env.local << EOF
+GITHUB_TOKEN=ghp_your_token
+GOOGLE_DOC_URL=https://docs.google.com/document/d/YOUR_DOC_ID/edit
+DELEGATION_EMAIL=your-service-account@project.iam.gserviceaccount.com
+EOF
 
 # 2. Run with PR creation
 go run . --create-pr
@@ -319,7 +335,10 @@ Would need Dockerfile, but not implemented yet
 For immediate use:
 
 1. ✅ Create `.env` with default values (team config)
-2. ✅ Create `.env.local` with your personal token (don't commit)
+2. ✅ Create `.env.local` with your personal configuration (don't commit):
+   - `GITHUB_TOKEN` - Your personal access token
+   - `GOOGLE_DOC_URL` - Google Doc to extract suggestions from
+   - `DELEGATION_EMAIL` - Service account email (if using domain-wide delegation)
 3. ✅ Set up Google credentials: Place `bau-test-creds.json`
 4. ✅ Run: `go run . --create-pr`
 5. ✅ Review PR on GitHub
