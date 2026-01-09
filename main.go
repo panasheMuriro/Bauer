@@ -954,7 +954,14 @@ func fetchComments(ctx context.Context, driveService *drive.Service, docID strin
 
 func main() {
 	// Setup structured logging
-	logger := slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{
+	logFile, err := os.OpenFile("log.json", os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0644)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Failed to open log file: %v\n", err)
+		os.Exit(1)
+	}
+	defer logFile.Close()
+
+	logger := slog.New(slog.NewJSONHandler(logFile, &slog.HandlerOptions{
 		Level: slog.LevelDebug,
 	}))
 	slog.SetDefault(logger)
@@ -1061,5 +1068,10 @@ func main() {
 	}
 
 	outputJSON, _ := json.MarshalIndent(output, "", "  ")
+	slog.Info("Actionable suggestions JSON generated")
+	err = os.WriteFile("output.json", outputJSON, 0644)
+	if err != nil {
+		slog.Error("Failed to write output file", slog.String("error", err.Error()))
+	}
 	fmt.Println(string(outputJSON))
 }
