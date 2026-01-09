@@ -15,17 +15,8 @@ import (
 	"google.golang.org/api/option"
 )
 
-// Hardcoded Google Doc URL for POC
-// Format: https://docs.google.com/document/d/{documentId}/edit
-const googleDocURL = ""
-
-// Hardcoded email for credentials delegation
-// This email is used to delegate service account credentials to access the document
-const delegationEmail = ""
-
-// Set to false to use direct service account access (document must be shared with service account)
-// Set to true to use domain-wide delegation (requires admin setup)
-const useDelegation = false
+// Hardcoded Google Doc ID for POC
+const googleDocID = "1b9F1Av8tRNG8xkPHgjvtBKrQogXRDaRb0Lw7pEZxr9I"
 
 // Suggestion represents a suggestion (insertion or deletion) in the document.
 // This is the raw suggestion data extracted from the Google Docs API.
@@ -150,6 +141,7 @@ type DocumentStructure struct {
 
 // TableRange represents a table's position in the document
 type TableRange struct {
+	Title         string     `json:"title,omitempty"` // Text immediately above the table
 	StartIndex    int64      `json:"start_index"`
 	EndIndex      int64      `json:"end_index"`
 	RowRanges     []RowRange `json:"row_ranges"`
@@ -226,10 +218,8 @@ type MetadataTable struct {
 }
 
 // buildDocsService creates a Google Docs API service using service account credentials.
-// If useDelegation is true and an email is provided, it delegates the credentials to that email.
-// If useDelegation is false, the service account accesses documents directly (must be shared with it).
-// This follows the same pattern as DriveServiceBuild in go_extract_gsuite_data/pipeline/drive.go
-func buildDocsService(ctx context.Context, email *string, delegate bool) (*docs.Service, error) {
+// The service account accesses documents directly (must be shared with it manually).
+func buildDocsService(ctx context.Context) (*docs.Service, error) {
 	scopes := []string{
 		"https://www.googleapis.com/auth/documents.readonly",
 	}
@@ -245,16 +235,6 @@ func buildDocsService(ctx context.Context, email *string, delegate bool) (*docs.
 		return nil, fmt.Errorf("failed to create JWT config: %v", err)
 	}
 
-	// Only set Subject for domain-wide delegation
-	if delegate {
-		if email != nil {
-			config.Subject = *email
-		} else {
-			config.Subject = delegationEmail // default email
-		}
-	}
-	// If delegate is false, don't set Subject - use service account directly
-
 	client := config.Client(ctx)
 	service, err := docs.NewService(ctx, option.WithHTTPClient(client))
 	if err != nil {
@@ -265,10 +245,8 @@ func buildDocsService(ctx context.Context, email *string, delegate bool) (*docs.
 }
 
 // buildDriveService creates a Google Drive API service using service account credentials.
-// If useDelegation is true and an email is provided, it delegates the credentials to that email.
-// If useDelegation is false, the service account accesses files directly (must be shared with it).
-// This follows the same pattern as DriveServiceBuild in go_extract_gsuite_data/pipeline/drive.go
-func buildDriveService(ctx context.Context, email *string, delegate bool) (*drive.Service, error) {
+// The service account accesses files directly (must be shared with it manually).
+func buildDriveService(ctx context.Context) (*drive.Service, error) {
 	scopes := []string{
 		"https://www.googleapis.com/auth/drive.readonly",
 	}
@@ -283,16 +261,6 @@ func buildDriveService(ctx context.Context, email *string, delegate bool) (*driv
 		return nil, fmt.Errorf("failed to create JWT config: %v", err)
 	}
 
-	// Only set Subject for domain-wide delegation
-	if delegate {
-		if email != nil {
-			config.Subject = *email
-		} else {
-			config.Subject = delegationEmail // default email
-		}
-	}
-	// If delegate is false, don't set Subject - use service account directly
-
 	client := config.Client(ctx)
 	service, err := drive.NewService(ctx, option.WithHTTPClient(client))
 	if err != nil {
@@ -300,17 +268,6 @@ func buildDriveService(ctx context.Context, email *string, delegate bool) (*driv
 	}
 
 	return service, nil
-}
-
-// extractDocumentID extracts the document ID from a Google Docs URL
-func extractDocumentID(url string) (string, error) {
-	// Pattern: https://docs.google.com/document/d/{documentId}/...
-	re := regexp.MustCompile(`/document/d/([a-zA-Z0-9_-]+)`)
-	matches := re.FindStringSubmatch(url)
-	if len(matches) < 2 {
-		return "", fmt.Errorf("could not extract document ID from URL: %s", url)
-	}
-	return matches[1], nil
 }
 
 // fetchDocumentContent fetches the document with suggestions inline
@@ -452,6 +409,51 @@ func extractSuggestions(doc *docs.Document) []Suggestion {
 	return suggestions
 }
 
+// extractHeading attempt to extract heading info from a structural element.
+// Returns nil if the element is not a heading.
+func extractHeading(elem *docs.StructuralElement) *DocumentHeading {
+	if elem.Paragraph == nil || elem.Paragraph.ParagraphStyle == nil {
+		return nil
+	}
+
+	para := elem.Paragraph
+	namedStyle := para.ParagraphStyle.NamedStyleType
+	headingLevel := 0
+	switch namedStyle {
+	case "HEADING_1":
+		headingLevel = 1
+	case "HEADING_2":
+		headingLevel = 2
+	case "HEADING_3":
+		headingLevel = 3
+	case "HEADING_4":
+		headingLevel = 4
+	case "HEADING_5":
+		headingLevel = 5
+	case "HEADING_6":
+		headingLevel = 6
+	}
+
+	if headingLevel == 0 {
+		return nil
+	}
+
+	// Extract heading text
+	var headingText strings.Builder
+	for _, paraElem := range para.Elements {
+		if paraElem.TextRun != nil {
+			headingText.WriteString(paraElem.TextRun.Content)
+		}
+	}
+
+	return &DocumentHeading{
+		Text:       strings.TrimSpace(headingText.String()),
+		Level:      headingLevel,
+		StartIndex: elem.StartIndex,
+		EndIndex:   elem.EndIndex,
+	}
+}
+
 // buildDocumentStructure builds a comprehensive structure of the document
 // including all headings, tables, and text positions for context lookups.
 func buildDocumentStructure(doc *docs.Document) *DocumentStructure {
@@ -468,50 +470,18 @@ func buildDocumentStructure(doc *docs.Document) *DocumentStructure {
 	}
 
 	tableIndex := 0
+	var lastParagraphText string
 
 	for _, elem := range doc.Body.Content {
 		// Extract headings
+		if heading := extractHeading(elem); heading != nil {
+			structure.Headings = append(structure.Headings, *heading)
+		}
+
+		// Extract all text elements with positions (including from headings)
 		if elem.Paragraph != nil {
-			para := elem.Paragraph
-
-			// Check if this is a heading
-			if para.ParagraphStyle != nil {
-				namedStyle := para.ParagraphStyle.NamedStyleType
-				headingLevel := 0
-				switch namedStyle {
-				case "HEADING_1":
-					headingLevel = 1
-				case "HEADING_2":
-					headingLevel = 2
-				case "HEADING_3":
-					headingLevel = 3
-				case "HEADING_4":
-					headingLevel = 4
-				case "HEADING_5":
-					headingLevel = 5
-				case "HEADING_6":
-					headingLevel = 6
-				}
-
-				if headingLevel > 0 {
-					// Extract heading text
-					var headingText strings.Builder
-					for _, paraElem := range para.Elements {
-						if paraElem.TextRun != nil {
-							headingText.WriteString(paraElem.TextRun.Content)
-						}
-					}
-					structure.Headings = append(structure.Headings, DocumentHeading{
-						Text:       strings.TrimSpace(headingText.String()),
-						Level:      headingLevel,
-						StartIndex: elem.StartIndex,
-						EndIndex:   elem.EndIndex,
-					})
-				}
-			}
-
-			// Extract all text elements with positions
-			for _, paraElem := range para.Elements {
+			var paraText strings.Builder
+			for _, paraElem := range elem.Paragraph.Elements {
 				if paraElem.TextRun != nil {
 					structure.TextElements = append(structure.TextElements, TextElementWithPosition{
 						Text:       paraElem.TextRun.Content,
@@ -519,19 +489,30 @@ func buildDocumentStructure(doc *docs.Document) *DocumentStructure {
 						EndIndex:   paraElem.EndIndex,
 					})
 					fullTextBuilder.WriteString(paraElem.TextRun.Content)
+					paraText.WriteString(paraElem.TextRun.Content)
 				}
 			}
+			lastParagraphText = strings.TrimSpace(paraText.String())
 		}
 
 		// Extract table structure
 		if elem.Table != nil {
 			tableIndex++
 			tableRange := TableRange{
+				Title:         lastParagraphText,
 				StartIndex:    elem.StartIndex,
 				EndIndex:      elem.EndIndex,
 				RowRanges:     []RowRange{},
 				ColumnHeaders: []string{},
 			}
+			// ... (rest of table processing)
+		}
+
+		// Reset lastParagraphText if this element wasn't a paragraph
+		if elem.Paragraph == nil {
+			lastParagraphText = ""
+		}
+	}
 
 			for rowIdx, row := range elem.Table.TableRows {
 				rowRange := RowRange{
@@ -585,6 +566,11 @@ func buildDocumentStructure(doc *docs.Document) *DocumentStructure {
 			}
 
 			structure.Tables = append(structure.Tables, tableRange)
+		}
+
+		// Reset lastParagraphText if this element wasn't a paragraph
+		if elem.Paragraph == nil {
+			lastParagraphText = ""
 		}
 	}
 
@@ -861,7 +847,7 @@ func extractMetadataTable(doc *docs.Document) *MetadataTable {
 		value := extractCellText(row.TableCells[1])
 
 		// Skip header row (usually "Metadata" with empty value) or empty rows
-		if key == "" || key == "Metadata" {
+		if key == "" || strings.EqualFold(key, "Metadata") {
 			continue
 		}
 
@@ -969,51 +955,31 @@ func main() {
 	ctx := context.Background()
 
 	slog.Info("Starting Google Docs POC",
-		slog.String("doc_url", googleDocURL),
+		slog.String("doc_id", googleDocID),
 	)
 
-	// Extract document ID from URL
-	docID, err := extractDocumentID(googleDocURL)
-	if err != nil {
-		slog.Error("Failed to extract document ID", slog.String("error", err.Error()))
-		os.Exit(1)
-	}
-	slog.Info("Extracted document ID", slog.String("doc_id", docID))
-
 	// Build services
-	// If useDelegation is true, will impersonate delegationEmail via domain-wide delegation
-	// If useDelegation is false, service account accesses document directly (must be shared with it)
-	email := delegationEmail
-	docsService, err := buildDocsService(ctx, &email, useDelegation)
+	docsService, err := buildDocsService(ctx)
 	if err != nil {
 		slog.Error("Failed to build Docs service", slog.String("error", err.Error()))
 		os.Exit(1)
 	}
-	if useDelegation {
-		slog.Info("Docs service created successfully", slog.String("delegated_to", email))
-	} else {
-		slog.Info("Docs service created successfully (direct service account access)")
-	}
+	slog.Info("Docs service created successfully (direct service account access)")
 
-	driveService, err := buildDriveService(ctx, &email, useDelegation)
+	driveService, err := buildDriveService(ctx)
 	if err != nil {
 		slog.Error("Failed to build Drive service", slog.String("error", err.Error()))
 		os.Exit(1)
 	}
-	if useDelegation {
-		slog.Info("Drive service created successfully", slog.String("delegated_to", email))
-	} else {
-		slog.Info("Drive service created successfully (direct service account access)")
-	}
+	slog.Info("Drive service created successfully (direct service account access)")
 
 	// Fetch document content with suggestions inline
 	slog.Info("Fetching document content with suggestions inline...")
-	doc, err := fetchDocumentContent(ctx, docsService, docID)
+	doc, err := fetchDocumentContent(ctx, docsService, googleDocID)
 	if err != nil {
 		slog.Error("Failed to fetch document", slog.String("error", err.Error()))
 		os.Exit(1)
 	}
-
 	slog.Info("Document fetched successfully",
 		slog.String("title", doc.Title),
 		slog.String("document_id", doc.DocumentId),
@@ -1027,7 +993,7 @@ func main() {
 
 	// Fetch comments from Drive API
 	slog.Info("Fetching comments from Drive API...")
-	comments, err := fetchComments(ctx, driveService, docID)
+	comments, err := fetchComments(ctx, driveService, googleDocID)
 	if err != nil {
 		slog.Error("Failed to fetch comments", slog.String("error", err.Error()))
 		// Don't exit - comments might not be accessible but we still have suggestions
