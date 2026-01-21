@@ -6,22 +6,72 @@ import (
 )
 
 // GroupActionableSuggestions groups related atomic suggestions into logical units.
-// Suggestions are grouped by their ID and must be contiguous in position.
-// Returns a slice of grouped suggestions ready for LLM consumption.
-func GroupActionableSuggestions(suggestions []ActionableSuggestion, structure *DocumentStructure) []GroupedActionableSuggestion {
+// Suggestions are first grouped by their location (section, heading, table), then by
+// their ID within each location. Suggestions with the same ID must be contiguous in position.
+// Returns a slice of location-based groups, each containing grouped suggestions for that location.
+func GroupActionableSuggestions(suggestions []ActionableSuggestion, structure *DocumentStructure) []LocationGroupedSuggestions {
+	if len(suggestions) == 0 {
+		return []LocationGroupedSuggestions{}
+	}
+
+	// First, group suggestions by location
+	locationGroups := make(map[string][]ActionableSuggestion)
+	locationMap := make(map[string]SuggestionLocation) // Track the actual location object
+
+	for _, sugg := range suggestions {
+		locationKey := getLocationKey(sugg.Location)
+		locationGroups[locationKey] = append(locationGroups[locationKey], sugg)
+		locationMap[locationKey] = sugg.Location
+	}
+
+	// Process each location group
+	var result []LocationGroupedSuggestions
+	for locationKey, locationSuggestions := range locationGroups {
+		// Within this location, group by suggestion ID
+		groupedSuggestions := groupSuggestionsByID(locationSuggestions, structure)
+
+		// Sort suggestions within this location by position
+		sort.Slice(groupedSuggestions, func(i, j int) bool {
+			return groupedSuggestions[i].Position.StartIndex < groupedSuggestions[j].Position.StartIndex
+		})
+
+		result = append(result, LocationGroupedSuggestions{
+			Location:    locationMap[locationKey],
+			Suggestions: groupedSuggestions,
+		})
+	}
+
+	// Sort location groups by the first suggestion's position in each group
+	sort.Slice(result, func(i, j int) bool {
+		if len(result[i].Suggestions) == 0 {
+			return false
+		}
+		if len(result[j].Suggestions) == 0 {
+			return true
+		}
+		return result[i].Suggestions[0].Position.StartIndex < result[j].Suggestions[0].Position.StartIndex
+	})
+
+	return result
+}
+
+// groupSuggestionsByID groups suggestions by their ID and merges contiguous atomic operations.
+// Suggestions with the same ID that are contiguous in position are merged into a single
+// GroupedActionableSuggestion. Non-contiguous suggestions with the same ID are kept separate.
+func groupSuggestionsByID(suggestions []ActionableSuggestion, structure *DocumentStructure) []GroupedActionableSuggestion {
 	if len(suggestions) == 0 {
 		return []GroupedActionableSuggestion{}
 	}
 
-	// Group suggestions by ID
-	groupsByID := make(map[string][]ActionableSuggestion)
+	// Group by suggestion ID
+	groupsBySuggestionID := make(map[string][]ActionableSuggestion)
 	for _, sugg := range suggestions {
-		groupsByID[sugg.ID] = append(groupsByID[sugg.ID], sugg)
+		groupsBySuggestionID[sugg.ID] = append(groupsBySuggestionID[sugg.ID], sugg)
 	}
 
-	// Process each group
+	// Process each ID group
 	var grouped []GroupedActionableSuggestion
-	for id, group := range groupsByID {
+	for id, group := range groupsBySuggestionID {
 		// Sort by start position to ensure correct ordering
 		sort.Slice(group, func(i, j int) bool {
 			return group[i].Position.StartIndex < group[j].Position.StartIndex
@@ -47,6 +97,47 @@ func GroupActionableSuggestions(suggestions []ActionableSuggestion, structure *D
 	})
 
 	return grouped
+}
+
+// getLocationKey creates a unique key for a location to enable grouping.
+// Two locations are considered the same if they share the same section, heading, and table context.
+func getLocationKey(loc SuggestionLocation) string {
+	key := loc.Section
+
+	if loc.ParentHeading != "" {
+		key += "|heading:" + loc.ParentHeading + "|level:" + string(rune(loc.HeadingLevel))
+	}
+
+	if loc.InTable && loc.Table != nil {
+		key += "|table:" + loc.Table.TableID
+		if loc.Table.TableTitle != "" {
+			key += "|title:" + loc.Table.TableTitle
+		}
+	}
+
+	if loc.InMetadata {
+		key += "|metadata:true"
+	}
+
+	return key
+}
+
+// FilterMetadataSuggestions removes location groups that contain suggestions in the metadata table.
+// This is useful for excluding metadata-related changes from the main processing pipeline.
+// Returns a new slice with only non-metadata location groups.
+func FilterMetadataSuggestions(locationGroups []LocationGroupedSuggestions) []LocationGroupedSuggestions {
+	var filtered []LocationGroupedSuggestions
+
+	for _, group := range locationGroups {
+		// Skip location groups where suggestions are in metadata
+		if group.Location.InMetadata {
+			continue
+		}
+
+		filtered = append(filtered, group)
+	}
+
+	return filtered
 }
 
 // areContiguous checks if suggestions are adjacent or overlapping in position.
@@ -81,7 +172,6 @@ func convertSingleSuggestion(sugg ActionableSuggestion) GroupedActionableSuggest
 			TextBeforeChange: sugg.Verification.TextBeforeChange,
 			TextAfterChange:  sugg.Verification.TextAfterChange,
 		},
-		Location: sugg.Location,
 		Position: struct {
 			StartIndex int64 `json:"start_index"`
 			EndIndex   int64 `json:"end_index"`
@@ -142,7 +232,6 @@ func mergeSuggestions(id string, suggestions []ActionableSuggestion, structure *
 		},
 		Change:       mergedChange,
 		Verification: verification,
-		Location:     first.Location, // All should have same location
 		Position: struct {
 			StartIndex int64 `json:"start_index"`
 			EndIndex   int64 `json:"end_index"`

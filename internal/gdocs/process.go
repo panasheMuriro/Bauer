@@ -8,12 +8,12 @@ import (
 
 // ProcessingResult contains all extracted data from a Google Doc.
 type ProcessingResult struct {
-	DocumentTitle         string                        `json:"document_title"`
-	DocumentID            string                        `json:"document_id"`
-	Metadata              *MetadataTable                `json:"metadata,omitempty"`
-	ActionableSuggestions []ActionableSuggestion        `json:"actionable_suggestions"`
-	GroupedSuggestions    []GroupedActionableSuggestion `json:"grouped_suggestions"`
-	Comments              []Comment                     `json:"comments"`
+	DocumentTitle         string                       `json:"document_title"`
+	DocumentID            string                       `json:"document_id"`
+	Metadata              *MetadataTable               `json:"metadata,omitempty"`
+	ActionableSuggestions []ActionableSuggestion       `json:"actionable_suggestions"`
+	GroupedSuggestions    []LocationGroupedSuggestions `json:"grouped_suggestions"`
+	Comments              []Comment                    `json:"comments"`
 }
 
 // ProcessDocument fetches a document and extracts all relevant information.
@@ -57,9 +57,11 @@ func (c *Client) ProcessDocument(ctx context.Context, docID string) (*Processing
 
 	// Group Actionable Suggestions
 	groupedSuggestions := GroupActionableSuggestions(actionableSuggestions, docStructure)
-	slog.Info("Grouped actionable suggestions", slog.Int("field_count", len(groupedSuggestions)))
+	slog.Info("Grouped actionable suggestions", slog.Int("location_groups", len(groupedSuggestions)))
 
-	// TODO filter out suggestions in the metadata
+	// Filter out suggestions in the metadata table
+	groupedSuggestions = FilterMetadataSuggestions(groupedSuggestions)
+	slog.Info("Filtered metadata suggestions", slog.Int("location_groups_remaining", len(groupedSuggestions)))
 
 	return &ProcessingResult{
 		DocumentTitle:         doc.Title,

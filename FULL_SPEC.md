@@ -342,9 +342,9 @@ type TemplateConfig struct {
 
 ---
 
-### Chunking Grouped Suggestions (ProcessingResult)
+### Chunking Location-Grouped Suggestions (ProcessingResult)
 
-BAU will consume the new `GroupedActionableSuggestion` collection produced by the extraction/processing pipeline (returned as `ProcessingResult.GroupedSuggestions` in `internal/models/types.go`). These grouped suggestions represent logical units (merged insert/delete/replace operations) and are the primary items we will batch and feed to Copilot sessions.
+BAU will consume the new `LocationGroupedSuggestions` collection produced by the extraction/processing pipeline (returned as `ProcessingResult.GroupedSuggestions` in `internal/gdocs/types.go`). This structure first groups suggestions by their location in the document (section, heading, table), then within each location, groups atomic operations by suggestion ID. These location-based groups are the primary units we will batch and feed to Copilot sessions.
 
 Why chunking is required
 
@@ -354,8 +354,10 @@ Why chunking is required
 
 Overview of the chunking design
 
-1. Input: `ProcessingResult.GroupedSuggestions []models.GroupedActionableSuggestion` plus `DocumentStructure` and `extraction.json`.
-2. Partitioning: Group suggestions into chunks using heuristics (see below).
+1. Input: `ProcessingResult.GroupedSuggestions []LocationGroupedSuggestions` plus `DocumentStructure` and `extraction.json`. Each `LocationGroupedSuggestions` contains:
+   - `Location`: Contextual metadata (section, parent heading, table info)
+   - `Suggestions`: Array of `GroupedActionableSuggestion` for that location
+2. Partitioning: Location groups are natural chunks - each location group can be processed as a unit, or multiple location groups can be batched together using heuristics (see below).
 3. For each chunk:
    - Build a chunk-level payload (attachments + concise prompt).
    - Send the payload to Copilot via SDK session (non-interactive or interactive per `--interactive`).
@@ -366,18 +368,19 @@ Overview of the chunking design
 
 Chunking heuristics (recommended)
 
-- Primary grouping: by target file path (suggestions that refer to the same PrimaryPath or same file).
-- Secondary grouping: by document proximity (Position.StartIndex / EndIndex) to avoid interleaving widely separated edits.
-- Size cap: limit the number of suggestions or estimated tokens per chunk to keep within model context (e.g., 2–5k tokens target per chunk; configurable).
-- Table-aware grouping: if suggestions are inside the same table, keep them together.
-- Atomic group integrity: never split a single GroupedActionableSuggestion across chunks (each grouped suggestion is atomic).
+- Primary grouping: **by location** - suggestions are pre-grouped by their document location (section, heading, table). Each `LocationGroupedSuggestions` represents a natural semantic unit.
+- Secondary grouping: by target file path (if suggestions from multiple locations map to the same file, they can be batched together).
+- Size cap: limit the number of location groups or estimated tokens per chunk to keep within model context (e.g., 2–5k tokens target per chunk; configurable).
+- Location group integrity: **never split a single `LocationGroupedSuggestions` across chunks** - all suggestions within a location should be processed together as they share context.
+- Atomic suggestion integrity: never split a single `GroupedActionableSuggestion` within a location (each grouped suggestion represents merged atomic operations).
+- Natural ordering: location groups are already sorted by document position, making sequential processing straightforward.
 
 Constructing the chunk payloads: prompt + attachments
 Two viable payload strategies — trade-offs discussed below.
 
 A. Full-template-per-chunk (preferred for simplicity and human-readability)
 
-- For each chunk, render the full `technical-plan.md` template but include only the subset of `{{ .Suggestions }}` that belong to the chunk.
+- For each chunk, render the full `technical-plan.md` template but include only the subset of location groups that belong to the chunk (with their contained suggestions).
 - Attach `extraction.json` and `suggestions-detailed.json` (or the full `processing_result.json`) so the assistant can reference full context if needed.
 - Advantages:
   - Copilot receives the full plan context each time, reducing ambiguity.
@@ -389,7 +392,7 @@ A. Full-template-per-chunk (preferred for simplicity and human-readability)
 
 B. Minimal-chunk-prompt + context attachments (preferred for token efficiency)
 
-- For each chunk, send a concise prompt that references the full plan via attachment (attached once at session start or included with each chunk) and enumerates only the chunk's suggestions inline.
+- For each chunk, send a concise prompt that references the full plan via attachment (attached once at session start or included with each chunk) and enumerates only the chunk's location groups and their suggestions inline.
 - Attach metadata/verification JSON for only the chunk (smaller attachments).
 - Advantages:
   - Lower repeated token cost; more efficient for many or large plans.
@@ -448,7 +451,7 @@ Open questions and considerations
 
 Implementation checklist (practical)
 
-- [ ] Add `ProcessingResult.GroupedSuggestions` consumers in `internal/planner` and `internal/copilot`.
+- [ ] Add `ProcessingResult.GroupedSuggestions` (type: `[]LocationGroupedSuggestions`) consumers in `internal/planner` and `internal/copilot`.
 - [ ] Implement chunker utility with configurable heuristics (by file, by token estimate).
 - [ ] Render per-chunk templates (full-template mode) and attach chunk JSON files for each run.
 - [ ] Implement `check_file_exists`, `read_file_segment`, `preview_patch` tools in `internal/copilot/tools.go`.
@@ -458,7 +461,8 @@ Implementation checklist (practical)
 
 Summary
 
-- BAU will take `GroupedActionableSuggestion` (from `ProcessingResult`) and batch them into chunks before sending to Copilot via the SDK.
+- BAU will take `LocationGroupedSuggestions` (from `ProcessingResult.GroupedSuggestions`) and batch them into chunks before sending to Copilot via the SDK.
+- Each location group contains suggestions that share the same document context (section, heading, table), making them ideal semantic units for processing.
 - For MVP, BAU should send a full plan template per chunk (simpler, auditable), attach `suggestions-detailed.json`, stream the assistant response, verify changes, and commit per-chunk.
 - There are several open questions around token budgeting, session strategy, and verification strictness; these should be addressed with configurable defaults and integration tests.
 

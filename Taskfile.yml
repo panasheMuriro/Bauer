@@ -22,6 +22,6 @@ tasks:
       CREDS: "bau-test-creds.json"
       DOC_ID: "13pde34a6x5sAfWf30lgVm2NjsOiUdN-F8XSpANzjBfw"
     cmds:
-      - go run cmd/bauer/main.go --doc-id "{{.DOC_ID}}" --credentials "{{.CREDS}}" --dry-run
+      - go run cmd/bauer/main.go --doc-id "{{.DOC_ID}}" --credentials "{{.CREDS}}"
     # requires:
     #   vars: [DOC_ID]

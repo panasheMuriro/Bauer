@@ -129,10 +129,6 @@ type GroupedActionableSuggestion struct {
 	// Verification provides before/after text for validating the complete change
 	Verification SuggestionVerification `json:"verification"`
 
-	// Location provides contextual metadata (section, table, etc.) for human verification
-	// Shared across all atomic parts
-	Location SuggestionLocation `json:"location"`
-
 	// Position spans the entire range of all atomic changes
 	Position struct {
 		StartIndex int64 `json:"start_index"`
@@ -144,6 +140,17 @@ type GroupedActionableSuggestion struct {
 
 	// AtomicCount indicates how many operations were merged (1 for non-grouped suggestions)
 	AtomicCount int `json:"atomic_count"`
+}
+
+// LocationGroupedSuggestions represents suggestions grouped first by location, then by suggestion ID.
+// This structure makes it easier to process suggestions in a logical order - handling all
+// suggestions in one location before moving to the next.
+type LocationGroupedSuggestions struct {
+	// Location provides contextual metadata for this group
+	Location SuggestionLocation `json:"location"`
+
+	// Suggestions contains all grouped suggestions for this location
+	Suggestions []GroupedActionableSuggestion `json:"suggestions"`
 }
 
 // DocumentStructure holds the parsed structure of the document for context lookups
