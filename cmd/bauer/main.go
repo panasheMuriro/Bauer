@@ -23,7 +23,7 @@ func main() {
 	// 2. Setup Logging
 	// For now, mirroring POC behavior: logging to log.json in the current directory
 	// TODO disable with a flag or env var
-	logFile, err := os.OpenFile("log.json", os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0644)
+	logFile, err := os.OpenFile("bauer-log.json", os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0644)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Failed to open log file: %v\n", err)
 		os.Exit(1)
