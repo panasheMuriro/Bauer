@@ -11,6 +11,7 @@ type Suggestion struct {
 // DocumentHeading represents a heading in the document with its position.
 // Used to determine which section a suggestion belongs to.
 type DocumentHeading struct {
+	ID         string `json:"id"`
 	Text       string `json:"text"`
 	Level      int    `json:"level"` // 1-6 for HEADING_1 through HEADING_6
 	StartIndex int64  `json:"start_index"`

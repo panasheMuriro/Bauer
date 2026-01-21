@@ -70,10 +70,12 @@ func BuildDocumentStructure(doc *docs.Document) *DocumentStructure {
 	var lastParagraphText string
 	var textElementCounter int
 	var tableCounter int
+	var headingCounter int
 
 	for _, elem := range doc.Body.Content {
 		// Extract headings
-		if heading := extractHeading(elem); heading != nil {
+		if heading := extractHeading(elem, headingCounter+1); heading != nil {
+			headingCounter++
 			structure.Headings = append(structure.Headings, *heading)
 		}
 
@@ -416,7 +418,7 @@ func processParagraphElement(paraElem *docs.ParagraphElement, suggestions *[]Sug
 
 // extractHeading attempts to extract heading info from a structural element.
 // Returns nil if the element is not a heading.
-func extractHeading(elem *docs.StructuralElement) *DocumentHeading {
+func extractHeading(elem *docs.StructuralElement, headingCounter int) *DocumentHeading {
 	if elem.Paragraph == nil || elem.Paragraph.ParagraphStyle == nil {
 		return nil
 	}
@@ -451,6 +453,7 @@ func extractHeading(elem *docs.StructuralElement) *DocumentHeading {
 	}
 
 	return &DocumentHeading{
+		ID:         fmt.Sprintf("heading-%d", headingCounter),
 		Text:       strings.TrimSpace(headingText.String()),
 		Level:      headingLevel,
 		StartIndex: elem.StartIndex,
