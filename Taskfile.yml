@@ -1,0 +1,27 @@
+version: "3"
+
+tasks:
+  build:
+    desc: Build the Bauer binary
+    cmds:
+      - go build -o bau cmd/bauer/main.go
+
+  test:
+    desc: Run all tests
+    cmds:
+      - go test --cover ./...
+
+  lint:
+    desc: Format code using gofmt
+    cmds:
+      - gofmt -w .
+
+  run:
+    desc: Run the bau tool locally with specified document ID
+    vars:
+      CREDS: "bau-test-creds.json"
+      DOC_ID: "13pde34a6x5sAfWf30lgVm2NjsOiUdN-F8XSpANzjBfw"
+    cmds:
+      - go run cmd/bauer/main.go --doc-id "{{.DOC_ID}}" --credentials "{{.CREDS}}" --dry-run
+    # requires:
+    #   vars: [DOC_ID]
