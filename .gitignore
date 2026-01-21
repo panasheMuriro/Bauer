@@ -1,2 +1,7 @@
-bau-test-creds.json
+output.json
+doc-suggestions.json
+log.json
+*-creds.json
+*.log
+/.github/copilot-instructions.md
 .env.local

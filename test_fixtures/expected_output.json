@@ -1,0 +1,70 @@
+{
+  "document_title": "Integration Test Document",
+  "document_id": "test-doc-id-12345",
+  "metadata": {
+    "raw": {
+      "Page description": "A test document for integration.",
+      "Page title": "Ubuntu on Integration"
+    },
+    "page_title": "Ubuntu on Integration",
+    "page_description": "A test document for integration.",
+    "table_start_index": 2,
+    "table_end_index": 160
+  },
+  "actionable_suggestions": [
+    {
+      "id": "suggestion-insertion-1",
+      "anchor": {
+        "preceding_text": "ription\nA test document for integration.\n\nIntroduction\nThis is a paragraph with ",
+        "following_text": "text and deleted content.\nHeader 1\nHeader 2\nValue 1\nValue 2\n"
+      },
+      "change": {
+        "type": "insert",
+        "new_text": "inserted "
+      },
+      "verification": {
+        "text_before_change": "ription\nA test document for integration.\n\nIntroduction\nThis is a paragraph with text and deleted content.\nHeader 1\nHeader 2\nValue 1\nValue 2\n",
+        "text_after_change": "ription\nA test document for integration.\n\nIntroduction\nThis is a paragraph with inserted text and deleted content.\nHeader 1\nHeader 2\nValue 1\nValue 2\n"
+      },
+      "location": {
+        "section": "Body",
+        "parent_heading": "Introduction",
+        "heading_level": 1,
+        "in_table": false,
+        "in_metadata": false
+      },
+      "position": {
+        "start_index": 200,
+        "end_index": 210
+      }
+    },
+    {
+      "id": "suggestion-deletion-1",
+      "anchor": {
+        "preceding_text": "ument for integration.\n\nIntroduction\nThis is a paragraph with inserted text and ",
+        "following_text": "content.\nHeader 1\nHeader 2\nValue 1\nValue 2\n"
+      },
+      "change": {
+        "type": "delete",
+        "original_text": "deleted ",
+        "new_text": ""
+      },
+      "verification": {
+        "text_before_change": "ument for integration.\n\nIntroduction\nThis is a paragraph with inserted text and deleted content.\nHeader 1\nHeader 2\nValue 1\nValue 2\n",
+        "text_after_change": "ument for integration.\n\nIntroduction\nThis is a paragraph with inserted text and content.\nHeader 1\nHeader 2\nValue 1\nValue 2\n"
+      },
+      "location": {
+        "section": "Body",
+        "parent_heading": "Introduction",
+        "heading_level": 1,
+        "in_table": false,
+        "in_metadata": false
+      },
+      "position": {
+        "start_index": 220,
+        "end_index": 230
+      }
+    }
+  ],
+  "comments": []
+}

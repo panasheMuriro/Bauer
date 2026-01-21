@@ -49,7 +49,7 @@ This tool is designed for workflows where document feedback (suggestions and com
 │  │ Auth Layer   │    │ Docs API     │    │ Drive API    │       │
 │  │              │    │ Client       │    │ Client       │       │
 │  │ - JWT Config │    │              │    │              │       │
-│  │ - Delegation │    │ - Fetch Doc  │    │ - Fetch      │       │
+│  │              │    │ - Fetch Doc  │    │ - Fetch      │       │
 │  └──────┬───────┘    │ - Inline     │    │   Comments   │       │
 │         │            │   Suggestions│    │ - Pagination │       │
 │         │            └──────┬───────┘    └──────┬───────┘       │
@@ -164,27 +164,14 @@ The application uses Google Cloud service account credentials with JWT (JSON Web
 
 ### Authentication Modes
 
-The application supports two authentication modes controlled by `useDelegation`:
-
-#### 1. Direct Service Account Access (`useDelegation = false`)
+#### Direct Service Account Access
 
 - Service account accesses documents directly
-- Document must be explicitly shared with the service account email
-- Simpler setup, no admin involvement required
+- Document must be explicitly shared with the service account email (manual access)
+- Simple setup, no admin involvement required
 - **Use when:** Testing, personal documents, or documents you can share
 
-#### 2. Domain-Wide Delegation (`useDelegation = true`)
-
-- Service account impersonates a user via `config.Subject`
-- Requires Google Workspace admin to authorize scopes
-- Can access any document the impersonated user can access
-- **Use when:** Production environments accessing organizational documents
-
-**Delegation Setup (for mode 2):**
-1. Google Workspace Admin Console → Security → API Controls → Domain-wide Delegation
-2. Add the service account client ID
-3. Authorize the required scopes
-4. Set `delegationEmail` to a user who has document access
+**Note:** Domain-wide delegation is not supported in this tool. The service account must be granted access to each document manually by sharing the document with the service account's email address.
 
 ---
 
@@ -490,9 +477,7 @@ The `anchor` field contains JSON with more detailed position info but `quotedFil
 
 | Constant | Description | Example |
 |----------|-------------|---------|
-| `googleDocURL` | Target document URL | `https://docs.google.com/document/d/.../edit` |
-| `delegationEmail` | Email for impersonation | `user@domain.com` |
-| `useDelegation` | Enable domain-wide delegation | `false` |
+| `googleDocID` | Target document ID | `1b9F1Av8tRNG8xkPHgjvtBKrQogXRDaRb0Lw7pEZxr9I` |
 
 ### Credentials File
 

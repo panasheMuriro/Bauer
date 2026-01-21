@@ -1,0 +1,386 @@
+{
+  "documentId": "test-doc-id-12345",
+  "title": "Integration Test Document",
+  "body": {
+    "content": [
+      {
+        "endIndex": 1,
+        "sectionBreak": {
+          "sectionStyle": {
+            "columnSeparatorStyle": "NONE",
+            "contentDirection": "LEFT_TO_RIGHT",
+            "sectionType": "CONTINUOUS"
+          }
+        },
+        "startIndex": 0
+      },
+      {
+        "endIndex": 160,
+        "startIndex": 2,
+        "table": {
+          "columns": 2,
+          "rows": 3,
+          "tableRows": [
+            {
+              "endIndex": 50,
+              "startIndex": 3,
+              "tableCells": [
+                {
+                  "content": [
+                    {
+                      "endIndex": 20,
+                      "paragraph": {
+                        "elements": [
+                          {
+                            "endIndex": 20,
+                            "startIndex": 5,
+                            "textRun": {
+                              "content": "Metadata\n"
+                            }
+                          }
+                        ],
+                        "paragraphStyle": {
+                          "namedStyleType": "NORMAL_TEXT"
+                        }
+                      },
+                      "startIndex": 5
+                    }
+                  ],
+                  "endIndex": 21,
+                  "startIndex": 4
+                },
+                {
+                  "content": [
+                    {
+                      "endIndex": 48,
+                      "paragraph": {
+                        "elements": [
+                          {
+                            "endIndex": 48,
+                            "startIndex": 23,
+                            "textRun": {
+                              "content": "\n"
+                            }
+                          }
+                        ],
+                        "paragraphStyle": {
+                          "namedStyleType": "NORMAL_TEXT"
+                        }
+                      },
+                      "startIndex": 23
+                    }
+                  ],
+                  "endIndex": 49,
+                  "startIndex": 22
+                }
+              ]
+            },
+            {
+              "endIndex": 100,
+              "startIndex": 51,
+              "tableCells": [
+                {
+                  "content": [
+                    {
+                      "endIndex": 70,
+                      "paragraph": {
+                        "elements": [
+                          {
+                            "endIndex": 70,
+                            "startIndex": 53,
+                            "textRun": {
+                              "content": "Page title\n"
+                            }
+                          }
+                        ],
+                        "paragraphStyle": {
+                          "namedStyleType": "NORMAL_TEXT"
+                        }
+                      },
+                      "startIndex": 53
+                    }
+                  ],
+                  "endIndex": 71,
+                  "startIndex": 52
+                },
+                {
+                  "content": [
+                    {
+                      "endIndex": 98,
+                      "paragraph": {
+                        "elements": [
+                          {
+                            "endIndex": 98,
+                            "startIndex": 73,
+                            "textRun": {
+                              "content": "Ubuntu on Integration\n"
+                            }
+                          }
+                        ],
+                        "paragraphStyle": {
+                          "namedStyleType": "NORMAL_TEXT"
+                        }
+                      },
+                      "startIndex": 73
+                    }
+                  ],
+                  "endIndex": 99,
+                  "startIndex": 72
+                }
+              ]
+            },
+            {
+              "endIndex": 159,
+              "startIndex": 101,
+              "tableCells": [
+                {
+                  "content": [
+                    {
+                      "endIndex": 125,
+                      "paragraph": {
+                        "elements": [
+                          {
+                            "endIndex": 125,
+                            "startIndex": 103,
+                            "textRun": {
+                              "content": "Page description\n"
+                            }
+                          }
+                        ],
+                        "paragraphStyle": {
+                          "namedStyleType": "NORMAL_TEXT"
+                        }
+                      },
+                      "startIndex": 103
+                    }
+                  ],
+                  "endIndex": 126,
+                  "startIndex": 102
+                },
+                {
+                  "content": [
+                    {
+                      "endIndex": 157,
+                      "paragraph": {
+                        "elements": [
+                          {
+                            "endIndex": 157,
+                            "startIndex": 128,
+                            "textRun": {
+                              "content": "A test document for integration.\n"
+                            }
+                          }
+                        ],
+                        "paragraphStyle": {
+                          "namedStyleType": "NORMAL_TEXT"
+                        }
+                      },
+                      "startIndex": 128
+                    }
+                  ],
+                  "endIndex": 158,
+                  "startIndex": 127
+                }
+              ]
+            }
+          ],
+          "tableStyle": {}
+        }
+      },
+      {
+        "endIndex": 161,
+        "paragraph": {
+          "elements": [
+            {
+              "endIndex": 161,
+              "startIndex": 160,
+              "textRun": {
+                "content": "\n"
+              }
+            }
+          ],
+          "paragraphStyle": {
+            "namedStyleType": "NORMAL_TEXT"
+          }
+        },
+        "startIndex": 160
+      },
+      {
+        "endIndex": 180,
+        "paragraph": {
+          "elements": [
+            {
+              "endIndex": 180,
+              "startIndex": 161,
+              "textRun": {
+                "content": "Introduction\n"
+              }
+            }
+          ],
+          "paragraphStyle": {
+            "namedStyleType": "HEADING_1"
+          }
+        },
+        "startIndex": 161
+      },
+      {
+        "endIndex": 250,
+        "paragraph": {
+          "elements": [
+            {
+              "endIndex": 200,
+              "startIndex": 180,
+              "textRun": {
+                "content": "This is a paragraph with "
+              }
+            },
+            {
+              "endIndex": 210,
+              "startIndex": 200,
+              "textRun": {
+                "content": "inserted ",
+                "suggestedInsertionIds": [
+                  "suggestion-insertion-1"
+                ]
+              }
+            },
+            {
+              "endIndex": 220,
+              "startIndex": 210,
+              "textRun": {
+                "content": "text and "
+              }
+            },
+            {
+              "endIndex": 230,
+              "startIndex": 220,
+              "textRun": {
+                "content": "deleted ",
+                "suggestedDeletionIds": [
+                  "suggestion-deletion-1"
+                ]
+              }
+            },
+            {
+              "endIndex": 250,
+              "startIndex": 230,
+              "textRun": {
+                "content": "content.\n"
+              }
+            }
+          ],
+          "paragraphStyle": {
+            "namedStyleType": "NORMAL_TEXT"
+          }
+        },
+        "startIndex": 180
+      },
+      {
+        "endIndex": 300,
+        "startIndex": 251,
+        "table": {
+          "columns": 2,
+          "rows": 2,
+          "tableRows": [
+            {
+              "endIndex": 270,
+              "startIndex": 252,
+              "tableCells": [
+                {
+                  "content": [
+                    {
+                      "endIndex": 260,
+                      "paragraph": {
+                        "elements": [
+                          {
+                            "endIndex": 260,
+                            "startIndex": 254,
+                            "textRun": {
+                              "content": "Header 1\n"
+                            }
+                          }
+                        ]
+                      },
+                      "startIndex": 254
+                    }
+                  ],
+                  "endIndex": 261,
+                  "startIndex": 253
+                },
+                {
+                  "content": [
+                    {
+                      "endIndex": 269,
+                      "paragraph": {
+                        "elements": [
+                          {
+                            "endIndex": 269,
+                            "startIndex": 263,
+                            "textRun": {
+                              "content": "Header 2\n"
+                            }
+                          }
+                        ]
+                      },
+                      "startIndex": 263
+                    }
+                  ],
+                  "endIndex": 270,
+                  "startIndex": 262
+                }
+              ]
+            },
+            {
+              "endIndex": 299,
+              "startIndex": 271,
+              "tableCells": [
+                {
+                  "content": [
+                    {
+                      "endIndex": 285,
+                      "paragraph": {
+                        "elements": [
+                          {
+                            "endIndex": 285,
+                            "startIndex": 273,
+                            "textRun": {
+                              "content": "Value 1\n"
+                            }
+                          }
+                        ]
+                      },
+                      "startIndex": 273
+                    }
+                  ],
+                  "endIndex": 286,
+                  "startIndex": 272
+                },
+                {
+                  "content": [
+                    {
+                      "endIndex": 298,
+                      "paragraph": {
+                        "elements": [
+                          {
+                            "endIndex": 298,
+                            "startIndex": 288,
+                            "textRun": {
+                              "content": "Value 2\n"
+                            }
+                          }
+                        ]
+                      },
+                      "startIndex": 288
+                    }
+                  ],
+                  "endIndex": 299,
+                  "startIndex": 287
+                }
+              ]
+            }
+          ]
+        }
+      }
+    ]
+  }
+}
