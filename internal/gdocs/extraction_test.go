@@ -327,8 +327,8 @@ func TestBuildActionableSuggestions(t *testing.T) {
 
 	structure := &models.DocumentStructure{
 		TextElements: []models.TextElementWithPosition{
-			{Text: "Start ", StartIndex: 0, EndIndex: 6},
-			{Text: "End", StartIndex: 6, EndIndex: 9},
+			{ID: "text-1", Text: "Start ", StartIndex: 0, EndIndex: 6},
+			{ID: "text-2", Text: "End", StartIndex: 6, EndIndex: 9},
 		},
 		Headings: []models.DocumentHeading{
 			{Text: "My Heading", Level: 1, StartIndex: 0, EndIndex: 5},
@@ -353,7 +353,7 @@ func TestBuildActionableSuggestions(t *testing.T) {
 
 	as := actionable[0]
 
-	// Verify Anchor
+	// Verify Anchor (only newlines/tabs trimmed, spaces preserved)
 	if as.Anchor.PrecedingText != "Start " {
 		t.Errorf("Expected PrecedingText 'Start ', got '%s'", as.Anchor.PrecedingText)
 	}
@@ -389,5 +389,214 @@ func createContent(text string) []*docs.StructuralElement {
 				},
 			},
 		},
+	}
+}
+
+// TestGetTextAround tests the text extraction around a position with various edge cases
+func TestGetTextAround(t *testing.T) {
+	tests := []struct {
+		name         string
+		structure    *models.DocumentStructure
+		startIndex   int64
+		endIndex     int64
+		anchorLength int
+		wantBefore   string
+		wantAfter    string
+		description  string
+	}{
+		{
+			name: "basic extraction - insertion point",
+			structure: &models.DocumentStructure{
+				TextElements: []models.TextElementWithPosition{
+					{ID: "text-1", Text: "Hello ", StartIndex: 0, EndIndex: 6},
+					{ID: "text-2", Text: "World", StartIndex: 6, EndIndex: 11},
+				},
+			},
+			startIndex:   6,
+			endIndex:     6,
+			anchorLength: 80,
+			wantBefore:   "Hello ",
+			wantAfter:    "World",
+			description:  "Insertion point between two elements",
+		},
+		{
+			name: "partial text extraction - element spans start",
+			structure: &models.DocumentStructure{
+				TextElements: []models.TextElementWithPosition{
+					{ID: "text-1", Text: "Hello World!", StartIndex: 0, EndIndex: 12},
+				},
+			},
+			startIndex:   6,
+			endIndex:     11,
+			anchorLength: 80,
+			wantBefore:   "Hello ",
+			wantAfter:    "!",
+			description:  "Single element spans both positions",
+		},
+		{
+			name: "partial text extraction - element spans end",
+			structure: &models.DocumentStructure{
+				TextElements: []models.TextElementWithPosition{
+					{ID: "text-1", Text: "Start ", StartIndex: 0, EndIndex: 6},
+					{ID: "text-2", Text: "Middle End", StartIndex: 6, EndIndex: 16},
+				},
+			},
+			startIndex:   6,
+			endIndex:     12,
+			anchorLength: 80,
+			wantBefore:   "Start ",
+			wantAfter:    " End",
+			description:  "Second element spans end position",
+		},
+		{
+			name: "anchor length limiting",
+			structure: &models.DocumentStructure{
+				TextElements: []models.TextElementWithPosition{
+					{ID: "text-1", Text: "This is a very long text before the suggestion point. ", StartIndex: 0, EndIndex: 55},
+					{ID: "text-2", Text: "This is a very long text after the suggestion point.", StartIndex: 55, EndIndex: 107},
+				},
+			},
+			startIndex:   55,
+			endIndex:     55,
+			anchorLength: 10,
+			wantBefore:   "on point. ",
+			wantAfter:    "This is a ",
+			description:  "Anchor length limits output to 10 chars",
+		},
+		{
+			name: "multiple elements before and after",
+			structure: &models.DocumentStructure{
+				TextElements: []models.TextElementWithPosition{
+					{ID: "text-1", Text: "Part1 ", StartIndex: 0, EndIndex: 6},
+					{ID: "text-2", Text: "Part2 ", StartIndex: 6, EndIndex: 12},
+					{ID: "text-3", Text: "Part3 ", StartIndex: 12, EndIndex: 18},
+					{ID: "text-4", Text: "Part4", StartIndex: 18, EndIndex: 23},
+				},
+			},
+			startIndex:   12,
+			endIndex:     18,
+			anchorLength: 80,
+			wantBefore:   "Part1 Part2 ",
+			wantAfter:    "Part4",
+			description:  "Multiple elements concatenated",
+		},
+		{
+			name: "element entirely within suggestion range",
+			structure: &models.DocumentStructure{
+				TextElements: []models.TextElementWithPosition{
+					{ID: "text-1", Text: "Before ", StartIndex: 0, EndIndex: 7},
+					{ID: "text-2", Text: "ToDelete", StartIndex: 7, EndIndex: 15},
+					{ID: "text-3", Text: " After", StartIndex: 15, EndIndex: 21},
+				},
+			},
+			startIndex:   7,
+			endIndex:     15,
+			anchorLength: 80,
+			wantBefore:   "Before ",
+			wantAfter:    " After",
+			description:  "Middle element is within suggestion range (deleted)",
+		},
+		{
+			name: "empty structure",
+			structure: &models.DocumentStructure{
+				TextElements: []models.TextElementWithPosition{},
+			},
+			startIndex:   0,
+			endIndex:     0,
+			anchorLength: 80,
+			wantBefore:   "",
+			wantAfter:    "",
+			description:  "No text elements",
+		},
+		{
+			name: "position at document start",
+			structure: &models.DocumentStructure{
+				TextElements: []models.TextElementWithPosition{
+					{ID: "text-1", Text: "Start text", StartIndex: 0, EndIndex: 10},
+				},
+			},
+			startIndex:   0,
+			endIndex:     0,
+			anchorLength: 80,
+			wantBefore:   "",
+			wantAfter:    "Start text",
+			description:  "Insertion at very start of document",
+		},
+		{
+			name: "position at document end",
+			structure: &models.DocumentStructure{
+				TextElements: []models.TextElementWithPosition{
+					{ID: "text-1", Text: "End text", StartIndex: 0, EndIndex: 8},
+				},
+			},
+			startIndex:   8,
+			endIndex:     8,
+			anchorLength: 80,
+			wantBefore:   "End text",
+			wantAfter:    "",
+			description:  "Insertion at very end of document",
+		},
+		{
+			name: "whitespace trimming",
+			structure: &models.DocumentStructure{
+				TextElements: []models.TextElementWithPosition{
+					{ID: "text-1", Text: "\n\t Before \n\t", StartIndex: 0, EndIndex: 13},
+					{ID: "text-2", Text: "\n\t After \n\t", StartIndex: 13, EndIndex: 24},
+				},
+			},
+			startIndex:   13,
+			endIndex:     13,
+			anchorLength: 80,
+			wantBefore:   "\n\t Before \n\t",
+			wantAfter:    "\n\t After \n\t",
+			description:  "No trimming applied, full text returned",
+		},
+		{
+			name: "partial extraction mid-element",
+			structure: &models.DocumentStructure{
+				TextElements: []models.TextElementWithPosition{
+					{ID: "text-1", Text: "0123456789", StartIndex: 0, EndIndex: 10},
+				},
+			},
+			startIndex:   3,
+			endIndex:     7,
+			anchorLength: 80,
+			wantBefore:   "012",
+			wantAfter:    "789",
+			description:  "Extract portions from middle of element",
+		},
+		{
+			name: "replacement spanning multiple elements",
+			structure: &models.DocumentStructure{
+				TextElements: []models.TextElementWithPosition{
+					{ID: "text-1", Text: "AAA", StartIndex: 0, EndIndex: 3},
+					{ID: "text-2", Text: "BBB", StartIndex: 3, EndIndex: 6},
+					{ID: "text-3", Text: "CCC", StartIndex: 6, EndIndex: 9},
+					{ID: "text-4", Text: "DDD", StartIndex: 9, EndIndex: 12},
+				},
+			},
+			startIndex:   3,
+			endIndex:     9,
+			anchorLength: 80,
+			wantBefore:   "AAA",
+			wantAfter:    "DDD",
+			description:  "Replacement spans BBB and CCC, which should not appear in anchors",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			before, after := getTextAround(tt.structure, tt.startIndex, tt.endIndex, tt.anchorLength)
+
+			if before != tt.wantBefore {
+				t.Errorf("PrecedingText mismatch\n  want: %q\n  got:  %q\n  desc: %s",
+					tt.wantBefore, before, tt.description)
+			}
+
+			if after != tt.wantAfter {
+				t.Errorf("FollowingText mismatch\n  want: %q\n  got:  %q\n  desc: %s",
+					tt.wantAfter, after, tt.description)
+			}
+		})
 	}
 }

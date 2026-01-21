@@ -110,6 +110,41 @@ type ActionableSuggestion struct {
 	} `json:"position"`
 }
 
+// GroupedActionableSuggestion represents one or more atomic suggestions that belong together.
+// When Google Docs returns a replacement operation, it breaks it into multiple atomic
+// insert/delete operations with the same suggestion ID. This type groups those together
+// into a single logical suggestion for easier consumption by LLMs.
+type GroupedActionableSuggestion struct {
+	// ID is the unique suggestion identifier from Google Docs (shared across all atomic parts)
+	ID string `json:"id"`
+
+	// Anchor contains exact text before/after for locating where to apply the change
+	// Uses larger context (120 chars) to account for multi-part changes
+	Anchor SuggestionAnchor `json:"anchor"`
+
+	// Change describes the complete, merged modification to make
+	Change SuggestionChange `json:"change"`
+
+	// Verification provides before/after text for validating the complete change
+	Verification SuggestionVerification `json:"verification"`
+
+	// Location provides contextual metadata (section, table, etc.) for human verification
+	// Shared across all atomic parts
+	Location SuggestionLocation `json:"location"`
+
+	// Position spans the entire range of all atomic changes
+	Position struct {
+		StartIndex int64 `json:"start_index"`
+		EndIndex   int64 `json:"end_index"`
+	} `json:"position"`
+
+	// AtomicChanges preserves the individual operations for debugging/reference
+	AtomicChanges []SuggestionChange `json:"atomic_changes,omitempty"`
+
+	// AtomicCount indicates how many operations were merged (1 for non-grouped suggestions)
+	AtomicCount int `json:"atomic_count"`
+}
+
 // DocumentStructure holds the parsed structure of the document for context lookups
 type DocumentStructure struct {
 	Headings     []DocumentHeading         `json:"headings"`

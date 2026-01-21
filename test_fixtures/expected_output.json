@@ -16,15 +16,15 @@
       "id": "suggestion-insertion-1",
       "anchor": {
         "preceding_text": "ription\nA test document for integration.\n\nIntroduction\nThis is a paragraph with ",
-        "following_text": "text and deleted content.\nHeader 1\nHeader 2\nValue 1\nValue 2"
+        "following_text": "text and deleted content.\nHeader 1\nHeader 2\nValue 1\nValue 2\n"
       },
       "change": {
         "type": "insert",
         "new_text": "inserted "
       },
       "verification": {
-        "text_before_change": "ription\nA test document for integration.\n\nIntroduction\nThis is a paragraph with text and deleted content.\nHeader 1\nHeader 2\nValue 1\nValue 2",
-        "text_after_change": "ription\nA test document for integration.\n\nIntroduction\nThis is a paragraph with inserted text and deleted content.\nHeader 1\nHeader 2\nValue 1\nValue 2"
+        "text_before_change": "ription\nA test document for integration.\n\nIntroduction\nThis is a paragraph with text and deleted content.\nHeader 1\nHeader 2\nValue 1\nValue 2\n",
+        "text_after_change": "ription\nA test document for integration.\n\nIntroduction\nThis is a paragraph with inserted text and deleted content.\nHeader 1\nHeader 2\nValue 1\nValue 2\n"
       },
       "location": {
         "section": "Body",
@@ -42,7 +42,7 @@
       "id": "suggestion-deletion-1",
       "anchor": {
         "preceding_text": "ument for integration.\n\nIntroduction\nThis is a paragraph with inserted text and ",
-        "following_text": "content.\nHeader 1\nHeader 2\nValue 1\nValue 2"
+        "following_text": "content.\nHeader 1\nHeader 2\nValue 1\nValue 2\n"
       },
       "change": {
         "type": "delete",
@@ -50,8 +50,8 @@
         "new_text": ""
       },
       "verification": {
-        "text_before_change": "ument for integration.\n\nIntroduction\nThis is a paragraph with inserted text and deleted content.\nHeader 1\nHeader 2\nValue 1\nValue 2",
-        "text_after_change": "ument for integration.\n\nIntroduction\nThis is a paragraph with inserted text and content.\nHeader 1\nHeader 2\nValue 1\nValue 2"
+        "text_before_change": "ument for integration.\n\nIntroduction\nThis is a paragraph with inserted text and deleted content.\nHeader 1\nHeader 2\nValue 1\nValue 2\n",
+        "text_after_change": "ument for integration.\n\nIntroduction\nThis is a paragraph with inserted text and content.\nHeader 1\nHeader 2\nValue 1\nValue 2\n"
       },
       "location": {
         "section": "Body",

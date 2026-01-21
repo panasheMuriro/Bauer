@@ -9,11 +9,12 @@ import (
 
 // ProcessingResult contains all extracted data from a Google Doc.
 type ProcessingResult struct {
-	DocumentTitle         string                        `json:"document_title"`
-	DocumentID            string                        `json:"document_id"`
-	Metadata              *models.MetadataTable         `json:"metadata,omitempty"`
-	ActionableSuggestions []models.ActionableSuggestion `json:"actionable_suggestions"`
-	Comments              []models.Comment              `json:"comments"`
+	DocumentTitle         string                               `json:"document_title"`
+	DocumentID            string                               `json:"document_id"`
+	Metadata              *models.MetadataTable                `json:"metadata,omitempty"`
+	ActionableSuggestions []models.ActionableSuggestion        `json:"actionable_suggestions"`
+	GroupedSuggestions    []models.GroupedActionableSuggestion `json:"grouped_suggestions"`
+	Comments              []models.Comment                     `json:"comments"`
 }
 
 // ProcessDocument fetches a document and extracts all relevant information.
@@ -38,23 +39,11 @@ func (c *Client) ProcessDocument(ctx context.Context, docID string) (*Processing
 	suggestions := ExtractSuggestions(doc)
 	slog.Info("Suggestions extracted", slog.Int("count", len(suggestions)))
 
-	// // Fetch Comments
-	// // We handle comment fetching errors gracefully (log and continue)
-	// comments, err := c.FetchComments(ctx, docID)
-	// if err != nil {
-	// 	slog.Error("Failed to fetch comments", slog.String("error", err.Error()))
-	// 	fmt.Fprintf(os.Stderr, "Warning: Failed to fetch comments (proceeding without them): %v\n", err)
-	// 	comments = []models.Comment{} // Ensure non-nil for consistency
-	// } else {
-	// 	slog.Info("Comments fetched", slog.Int("count", len(comments)))
-	// }
-
 	// Extract Metadata
 	metadata := ExtractMetadataTable(doc)
 	if metadata != nil {
 		slog.Info("Metadata table extracted", slog.Int("field_count", len(metadata.Raw)))
 	}
-	slog.Info("Metadata extracted", slog.Any("metadata", metadata))
 
 	// Build Document Structure
 	docStructure := BuildDocumentStructure(doc)
@@ -62,11 +51,14 @@ func (c *Client) ProcessDocument(ctx context.Context, docID string) (*Processing
 		slog.Int("headings", len(docStructure.Headings)),
 		slog.Int("tables", len(docStructure.Tables)),
 	)
-	// slog.Info("Document structure", slog.Any("structure", docStructure))
 
 	// Build Actionable Suggestions
 	actionableSuggestions := BuildActionableSuggestions(suggestions, docStructure, metadata)
-	// slog.Info("Actionable Suggestions", slog.Any("actionable_suggestions", actionableSuggestions))
+	slog.Info("Extracted actionable suggestions", slog.Int("field_count", len(actionableSuggestions)))
+
+	// Group Actionable Suggestions
+	groupedSuggestions := GroupActionableSuggestions(actionableSuggestions, docStructure)
+	slog.Info("Grouped actionable suggestions", slog.Int("field_count", len(groupedSuggestions)))
 
 	// TODO filter out suggestions in the metadata
 
@@ -75,6 +67,7 @@ func (c *Client) ProcessDocument(ctx context.Context, docID string) (*Processing
 		DocumentID:            doc.DocumentId,
 		Metadata:              metadata,
 		ActionableSuggestions: actionableSuggestions,
+		GroupedSuggestions:    groupedSuggestions,
 		Comments:              nil,
 	}, nil
 }

@@ -54,6 +54,7 @@ func ExtractSuggestions(doc *docs.Document) []models.Suggestion {
 }
 
 // BuildDocumentStructure builds a comprehensive structure of the document.
+// TODO this should be combined with ExtractSuggestions to avoid multiple traversals of the same document
 func BuildDocumentStructure(doc *docs.Document) *models.DocumentStructure {
 	structure := &models.DocumentStructure{
 		Headings:     []models.DocumentHeading{},
@@ -539,24 +540,40 @@ func findTableLocation(structure *models.DocumentStructure, position int64) *mod
 }
 
 // getTextAround extracts text before and after a given position.
-// Returns exact text (not truncated) for machine-readable anchoring.
+// Handles partial text extraction from elements that span the positions.
 // The anchorLength parameter controls how much context to include.
 func getTextAround(structure *models.DocumentStructure, startIndex, endIndex int64, anchorLength int) (before, after string) {
 	var beforeBuilder strings.Builder
 	var afterBuilder strings.Builder
 
 	for _, elem := range structure.TextElements {
+		// Text before startIndex
 		if elem.EndIndex <= startIndex {
 			beforeBuilder.WriteString(elem.Text)
+		} else if elem.StartIndex < startIndex {
+			// Element spans the start position - extract the portion before startIndex
+			charsToTake := startIndex - elem.StartIndex
+			if charsToTake > 0 && charsToTake <= int64(len(elem.Text)) {
+				beforeBuilder.WriteString(elem.Text[:charsToTake])
+			}
 		}
+
+		// Text after endIndex
 		if elem.StartIndex >= endIndex {
 			afterBuilder.WriteString(elem.Text)
+		} else if elem.EndIndex > endIndex {
+			// Element spans the end position - extract the portion after endIndex
+			offsetIntoElement := endIndex - elem.StartIndex
+			if offsetIntoElement >= 0 && offsetIntoElement < int64(len(elem.Text)) {
+				afterBuilder.WriteString(elem.Text[offsetIntoElement:])
+			}
 		}
 	}
 
 	beforeText := beforeBuilder.String()
 	afterText := afterBuilder.String()
 
+	// Truncate to anchor length
 	if len(beforeText) > anchorLength {
 		before = beforeText[len(beforeText)-anchorLength:]
 	} else {
@@ -568,9 +585,6 @@ func getTextAround(structure *models.DocumentStructure, startIndex, endIndex int
 	} else {
 		after = afterText
 	}
-
-	before = strings.TrimLeft(before, "\n\t ")
-	after = strings.TrimRight(after, "\n\t ")
 
 	return before, after
 }
