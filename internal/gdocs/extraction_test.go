@@ -3,8 +3,6 @@ package gdocs
 import (
 	"testing"
 
-	"bauer/internal/models"
-
 	"google.golang.org/api/docs/v1"
 )
 
@@ -325,17 +323,17 @@ func TestBuildActionableSuggestions(t *testing.T) {
 	// "End" is indices 6-9
 	// Suggestion is at index 6
 
-	structure := &models.DocumentStructure{
-		TextElements: []models.TextElementWithPosition{
+	structure := &DocumentStructure{
+		TextElements: []TextElementWithPosition{
 			{ID: "text-1", Text: "Start ", StartIndex: 0, EndIndex: 6},
 			{ID: "text-2", Text: "End", StartIndex: 6, EndIndex: 9},
 		},
-		Headings: []models.DocumentHeading{
+		Headings: []DocumentHeading{
 			{Text: "My Heading", Level: 1, StartIndex: 0, EndIndex: 5},
 		},
 	}
 
-	suggestions := []models.Suggestion{
+	suggestions := []Suggestion{
 		{
 			ID:         "sugg-1",
 			Type:       "insertion",
@@ -396,7 +394,7 @@ func createContent(text string) []*docs.StructuralElement {
 func TestGetTextAround(t *testing.T) {
 	tests := []struct {
 		name         string
-		structure    *models.DocumentStructure
+		structure    *DocumentStructure
 		startIndex   int64
 		endIndex     int64
 		anchorLength int
@@ -406,8 +404,8 @@ func TestGetTextAround(t *testing.T) {
 	}{
 		{
 			name: "basic extraction - insertion point",
-			structure: &models.DocumentStructure{
-				TextElements: []models.TextElementWithPosition{
+			structure: &DocumentStructure{
+				TextElements: []TextElementWithPosition{
 					{ID: "text-1", Text: "Hello ", StartIndex: 0, EndIndex: 6},
 					{ID: "text-2", Text: "World", StartIndex: 6, EndIndex: 11},
 				},
@@ -421,8 +419,8 @@ func TestGetTextAround(t *testing.T) {
 		},
 		{
 			name: "partial text extraction - element spans start",
-			structure: &models.DocumentStructure{
-				TextElements: []models.TextElementWithPosition{
+			structure: &DocumentStructure{
+				TextElements: []TextElementWithPosition{
 					{ID: "text-1", Text: "Hello World!", StartIndex: 0, EndIndex: 12},
 				},
 			},
@@ -435,8 +433,8 @@ func TestGetTextAround(t *testing.T) {
 		},
 		{
 			name: "partial text extraction - element spans end",
-			structure: &models.DocumentStructure{
-				TextElements: []models.TextElementWithPosition{
+			structure: &DocumentStructure{
+				TextElements: []TextElementWithPosition{
 					{ID: "text-1", Text: "Start ", StartIndex: 0, EndIndex: 6},
 					{ID: "text-2", Text: "Middle End", StartIndex: 6, EndIndex: 16},
 				},
@@ -450,8 +448,8 @@ func TestGetTextAround(t *testing.T) {
 		},
 		{
 			name: "anchor length limiting",
-			structure: &models.DocumentStructure{
-				TextElements: []models.TextElementWithPosition{
+			structure: &DocumentStructure{
+				TextElements: []TextElementWithPosition{
 					{ID: "text-1", Text: "This is a very long text before the suggestion point. ", StartIndex: 0, EndIndex: 55},
 					{ID: "text-2", Text: "This is a very long text after the suggestion point.", StartIndex: 55, EndIndex: 107},
 				},
@@ -465,8 +463,8 @@ func TestGetTextAround(t *testing.T) {
 		},
 		{
 			name: "multiple elements before and after",
-			structure: &models.DocumentStructure{
-				TextElements: []models.TextElementWithPosition{
+			structure: &DocumentStructure{
+				TextElements: []TextElementWithPosition{
 					{ID: "text-1", Text: "Part1 ", StartIndex: 0, EndIndex: 6},
 					{ID: "text-2", Text: "Part2 ", StartIndex: 6, EndIndex: 12},
 					{ID: "text-3", Text: "Part3 ", StartIndex: 12, EndIndex: 18},
@@ -482,8 +480,8 @@ func TestGetTextAround(t *testing.T) {
 		},
 		{
 			name: "element entirely within suggestion range",
-			structure: &models.DocumentStructure{
-				TextElements: []models.TextElementWithPosition{
+			structure: &DocumentStructure{
+				TextElements: []TextElementWithPosition{
 					{ID: "text-1", Text: "Before ", StartIndex: 0, EndIndex: 7},
 					{ID: "text-2", Text: "ToDelete", StartIndex: 7, EndIndex: 15},
 					{ID: "text-3", Text: " After", StartIndex: 15, EndIndex: 21},
@@ -498,8 +496,8 @@ func TestGetTextAround(t *testing.T) {
 		},
 		{
 			name: "empty structure",
-			structure: &models.DocumentStructure{
-				TextElements: []models.TextElementWithPosition{},
+			structure: &DocumentStructure{
+				TextElements: []TextElementWithPosition{},
 			},
 			startIndex:   0,
 			endIndex:     0,
@@ -510,8 +508,8 @@ func TestGetTextAround(t *testing.T) {
 		},
 		{
 			name: "position at document start",
-			structure: &models.DocumentStructure{
-				TextElements: []models.TextElementWithPosition{
+			structure: &DocumentStructure{
+				TextElements: []TextElementWithPosition{
 					{ID: "text-1", Text: "Start text", StartIndex: 0, EndIndex: 10},
 				},
 			},
@@ -524,8 +522,8 @@ func TestGetTextAround(t *testing.T) {
 		},
 		{
 			name: "position at document end",
-			structure: &models.DocumentStructure{
-				TextElements: []models.TextElementWithPosition{
+			structure: &DocumentStructure{
+				TextElements: []TextElementWithPosition{
 					{ID: "text-1", Text: "End text", StartIndex: 0, EndIndex: 8},
 				},
 			},
@@ -538,8 +536,8 @@ func TestGetTextAround(t *testing.T) {
 		},
 		{
 			name: "whitespace trimming",
-			structure: &models.DocumentStructure{
-				TextElements: []models.TextElementWithPosition{
+			structure: &DocumentStructure{
+				TextElements: []TextElementWithPosition{
 					{ID: "text-1", Text: "\n\t Before \n\t", StartIndex: 0, EndIndex: 13},
 					{ID: "text-2", Text: "\n\t After \n\t", StartIndex: 13, EndIndex: 24},
 				},
@@ -553,8 +551,8 @@ func TestGetTextAround(t *testing.T) {
 		},
 		{
 			name: "partial extraction mid-element",
-			structure: &models.DocumentStructure{
-				TextElements: []models.TextElementWithPosition{
+			structure: &DocumentStructure{
+				TextElements: []TextElementWithPosition{
 					{ID: "text-1", Text: "0123456789", StartIndex: 0, EndIndex: 10},
 				},
 			},
@@ -567,8 +565,8 @@ func TestGetTextAround(t *testing.T) {
 		},
 		{
 			name: "replacement spanning multiple elements",
-			structure: &models.DocumentStructure{
-				TextElements: []models.TextElementWithPosition{
+			structure: &DocumentStructure{
+				TextElements: []TextElementWithPosition{
 					{ID: "text-1", Text: "AAA", StartIndex: 0, EndIndex: 3},
 					{ID: "text-2", Text: "BBB", StartIndex: 3, EndIndex: 6},
 					{ID: "text-3", Text: "CCC", StartIndex: 6, EndIndex: 9},

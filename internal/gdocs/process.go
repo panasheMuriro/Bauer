@@ -1,7 +1,6 @@
 package gdocs
 
 import (
-	"bauer/internal/models"
 	"context"
 	"fmt"
 	"log/slog"
@@ -9,12 +8,12 @@ import (
 
 // ProcessingResult contains all extracted data from a Google Doc.
 type ProcessingResult struct {
-	DocumentTitle         string                               `json:"document_title"`
-	DocumentID            string                               `json:"document_id"`
-	Metadata              *models.MetadataTable                `json:"metadata,omitempty"`
-	ActionableSuggestions []models.ActionableSuggestion        `json:"actionable_suggestions"`
-	GroupedSuggestions    []models.GroupedActionableSuggestion `json:"grouped_suggestions"`
-	Comments              []models.Comment                     `json:"comments"`
+	DocumentTitle         string                        `json:"document_title"`
+	DocumentID            string                        `json:"document_id"`
+	Metadata              *MetadataTable                `json:"metadata,omitempty"`
+	ActionableSuggestions []ActionableSuggestion        `json:"actionable_suggestions"`
+	GroupedSuggestions    []GroupedActionableSuggestion `json:"grouped_suggestions"`
+	Comments              []Comment                     `json:"comments"`
 }
 
 // ProcessDocument fetches a document and extracts all relevant information.

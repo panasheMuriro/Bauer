@@ -7,8 +7,6 @@ import (
 	"reflect"
 	"testing"
 
-	"bauer/internal/models"
-
 	"google.golang.org/api/docs/v1"
 )
 
@@ -46,7 +44,7 @@ func TestFullExtractionIntegration(t *testing.T) {
 		DocumentID:            doc.DocumentId,
 		Metadata:              metadata,
 		ActionableSuggestions: actionableSuggestions,
-		Comments:              []models.Comment{},
+		Comments:              []Comment{},
 	}
 
 	// 3. Load the expected output fixture

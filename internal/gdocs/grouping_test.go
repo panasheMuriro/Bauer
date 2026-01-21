@@ -1,7 +1,6 @@
 package gdocs
 
 import (
-	"bauer/internal/models"
 	"strings"
 	"testing"
 
@@ -10,11 +9,11 @@ import (
 
 // TestGroupActionableSuggestions_EmptyInput tests handling of empty input
 func TestGroupActionableSuggestions_EmptyInput(t *testing.T) {
-	structure := &models.DocumentStructure{
-		TextElements: []models.TextElementWithPosition{},
+	structure := &DocumentStructure{
+		TextElements: []TextElementWithPosition{},
 	}
 
-	result := GroupActionableSuggestions([]models.ActionableSuggestion{}, structure)
+	result := GroupActionableSuggestions([]ActionableSuggestion{}, structure)
 
 	if len(result) != 0 {
 		t.Errorf("Expected empty result for empty input, got %d suggestions", len(result))
@@ -23,30 +22,30 @@ func TestGroupActionableSuggestions_EmptyInput(t *testing.T) {
 
 // TestGroupActionableSuggestions_SingleSuggestion tests that single suggestions are converted correctly
 func TestGroupActionableSuggestions_SingleSuggestion(t *testing.T) {
-	structure := &models.DocumentStructure{
-		TextElements: []models.TextElementWithPosition{
+	structure := &DocumentStructure{
+		TextElements: []TextElementWithPosition{
 			{ID: "text-1", Text: "Hello world! ", StartIndex: 0, EndIndex: 13},
 			{ID: "text-2", Text: "This is a test.", StartIndex: 13, EndIndex: 28},
 		},
 	}
 
-	suggestions := []models.ActionableSuggestion{
+	suggestions := []ActionableSuggestion{
 		{
 			ID: "suggest.1",
-			Anchor: models.SuggestionAnchor{
+			Anchor: SuggestionAnchor{
 				PrecedingText: "Hello ",
 				FollowingText: "! This",
 			},
-			Change: models.SuggestionChange{
+			Change: SuggestionChange{
 				Type:         "replace",
 				OriginalText: "world",
 				NewText:      "universe",
 			},
-			Verification: models.SuggestionVerification{
+			Verification: SuggestionVerification{
 				TextBeforeChange: "Hello world! This",
 				TextAfterChange:  "Hello universe! This",
 			},
-			Location: models.SuggestionLocation{
+			Location: SuggestionLocation{
 				Section: "Body",
 			},
 			Position: struct {
@@ -65,22 +64,22 @@ func TestGroupActionableSuggestions_SingleSuggestion(t *testing.T) {
 		t.Fatalf("Expected 1 grouped suggestion, got %d", len(result))
 	}
 
-	want := models.GroupedActionableSuggestion{
+	want := GroupedActionableSuggestion{
 		ID: "suggest.1",
-		Anchor: models.SuggestionAnchor{
+		Anchor: SuggestionAnchor{
 			PrecedingText: "Hello ",
 			FollowingText: "! This",
 		},
-		Change: models.SuggestionChange{
+		Change: SuggestionChange{
 			Type:         "replace",
 			OriginalText: "world",
 			NewText:      "universe",
 		},
-		Verification: models.SuggestionVerification{
+		Verification: SuggestionVerification{
 			TextBeforeChange: "Hello world! This",
 			TextAfterChange:  "Hello universe! This",
 		},
-		Location: models.SuggestionLocation{
+		Location: SuggestionLocation{
 			Section: "Body",
 		},
 		Position: struct {
@@ -90,7 +89,7 @@ func TestGroupActionableSuggestions_SingleSuggestion(t *testing.T) {
 			StartIndex: 6,
 			EndIndex:   11,
 		},
-		AtomicChanges: []models.SuggestionChange{
+		AtomicChanges: []SuggestionChange{
 			{
 				Type:         "replace",
 				OriginalText: "world",
@@ -107,17 +106,17 @@ func TestGroupActionableSuggestions_SingleSuggestion(t *testing.T) {
 
 // TestGroupActionableSuggestions_MultipleUnrelatedSuggestions tests that unrelated suggestions stay separate
 func TestGroupActionableSuggestions_MultipleUnrelatedSuggestions(t *testing.T) {
-	structure := &models.DocumentStructure{
-		TextElements: []models.TextElementWithPosition{
+	structure := &DocumentStructure{
+		TextElements: []TextElementWithPosition{
 			{ID: "text-1", Text: "First sentence. ", StartIndex: 0, EndIndex: 16},
 			{ID: "text-2", Text: "Second sentence.", StartIndex: 16, EndIndex: 32},
 		},
 	}
 
-	suggestions := []models.ActionableSuggestion{
+	suggestions := []ActionableSuggestion{
 		{
 			ID: "suggest.1",
-			Change: models.SuggestionChange{
+			Change: SuggestionChange{
 				Type:    "insert",
 				NewText: "Hello ",
 			},
@@ -128,7 +127,7 @@ func TestGroupActionableSuggestions_MultipleUnrelatedSuggestions(t *testing.T) {
 		},
 		{
 			ID: "suggest.2",
-			Change: models.SuggestionChange{
+			Change: SuggestionChange{
 				Type:         "delete",
 				OriginalText: "sentence",
 			},
@@ -155,8 +154,8 @@ func TestGroupActionableSuggestions_MultipleUnrelatedSuggestions(t *testing.T) {
 
 // TestGroupActionableSuggestions_GroupedReplacement tests the main use case: grouping insert+delete into replace
 func TestGroupActionableSuggestions_GroupedReplacement(t *testing.T) {
-	structure := &models.DocumentStructure{
-		TextElements: []models.TextElementWithPosition{
+	structure := &DocumentStructure{
+		TextElements: []TextElementWithPosition{
 			{ID: "text-1", Text: "TEMPLATE HERO\n", StartIndex: 783, EndIndex: 797},
 			{ID: "text-2", Text: "Yyour full stack for AI infrastructure", StartIndex: 797, EndIndex: 835},
 			{ID: "text-3", Text: " at scale\n", StartIndex: 835, EndIndex: 845},
@@ -165,22 +164,22 @@ func TestGroupActionableSuggestions_GroupedReplacement(t *testing.T) {
 
 	// Simulating the example from the user: "Yyour" -> "Build your"
 	// The positions are now contiguous: 797->797, 797->798, 798->798
-	suggestions := []models.ActionableSuggestion{
+	suggestions := []ActionableSuggestion{
 		{
 			ID: "suggest.r3eqy31u1iac",
-			Anchor: models.SuggestionAnchor{
+			Anchor: SuggestionAnchor{
 				PrecedingText: "TEMPLATE HERO\n",
 				FollowingText: "Yyour full stack",
 			},
-			Change: models.SuggestionChange{
+			Change: SuggestionChange{
 				Type:    "insert",
 				NewText: "Build ",
 			},
-			Verification: models.SuggestionVerification{
+			Verification: SuggestionVerification{
 				TextBeforeChange: "TEMPLATE HERO\nYyour full stack",
 				TextAfterChange:  "TEMPLATE HERO\nBuild Yyour full stack",
 			},
-			Location: models.SuggestionLocation{
+			Location: SuggestionLocation{
 				Section: "Body",
 				InTable: true,
 			},
@@ -191,19 +190,19 @@ func TestGroupActionableSuggestions_GroupedReplacement(t *testing.T) {
 		},
 		{
 			ID: "suggest.r3eqy31u1iac",
-			Anchor: models.SuggestionAnchor{
+			Anchor: SuggestionAnchor{
 				PrecedingText: "TEMPLATE HERO\nBuild ",
 				FollowingText: "your full stack",
 			},
-			Change: models.SuggestionChange{
+			Change: SuggestionChange{
 				Type:         "delete",
 				OriginalText: "Y",
 			},
-			Verification: models.SuggestionVerification{
+			Verification: SuggestionVerification{
 				TextBeforeChange: "TEMPLATE HERO\nBuild Yyour full stack",
 				TextAfterChange:  "TEMPLATE HERO\nBuild your full stack",
 			},
-			Location: models.SuggestionLocation{
+			Location: SuggestionLocation{
 				Section: "Body",
 				InTable: true,
 			},
@@ -214,19 +213,19 @@ func TestGroupActionableSuggestions_GroupedReplacement(t *testing.T) {
 		},
 		{
 			ID: "suggest.r3eqy31u1iac",
-			Anchor: models.SuggestionAnchor{
+			Anchor: SuggestionAnchor{
 				PrecedingText: "TEMPLATE HERO\nBuild Y",
 				FollowingText: "our full stack",
 			},
-			Change: models.SuggestionChange{
+			Change: SuggestionChange{
 				Type:    "insert",
 				NewText: "y",
 			},
-			Verification: models.SuggestionVerification{
+			Verification: SuggestionVerification{
 				TextBeforeChange: "TEMPLATE HERO\nBuild Your full stack",
 				TextAfterChange:  "TEMPLATE HERO\nBuild Yyour full stack",
 			},
-			Location: models.SuggestionLocation{
+			Location: SuggestionLocation{
 				Section: "Body",
 				InTable: true,
 			},
@@ -280,16 +279,16 @@ func TestGroupActionableSuggestions_GroupedReplacement(t *testing.T) {
 
 // TestGroupActionableSuggestions_PureInsertion tests grouping multiple insertions
 func TestGroupActionableSuggestions_PureInsertion(t *testing.T) {
-	structure := &models.DocumentStructure{
-		TextElements: []models.TextElementWithPosition{
+	structure := &DocumentStructure{
+		TextElements: []TextElementWithPosition{
 			{ID: "text-1", Text: "Hello world", StartIndex: 0, EndIndex: 11},
 		},
 	}
 
-	suggestions := []models.ActionableSuggestion{
+	suggestions := []ActionableSuggestion{
 		{
 			ID: "suggest.insert1",
-			Change: models.SuggestionChange{
+			Change: SuggestionChange{
 				Type:    "insert",
 				NewText: "beautiful ",
 			},
@@ -300,7 +299,7 @@ func TestGroupActionableSuggestions_PureInsertion(t *testing.T) {
 		},
 		{
 			ID: "suggest.insert1",
-			Change: models.SuggestionChange{
+			Change: SuggestionChange{
 				Type:    "insert",
 				NewText: "amazing ",
 			},
@@ -317,7 +316,7 @@ func TestGroupActionableSuggestions_PureInsertion(t *testing.T) {
 		t.Fatalf("Expected 1 grouped suggestion, got %d", len(result))
 	}
 
-	wantChange := models.SuggestionChange{
+	wantChange := SuggestionChange{
 		Type:         "insert",
 		OriginalText: "",
 		NewText:      "beautiful amazing ",
@@ -334,16 +333,16 @@ func TestGroupActionableSuggestions_PureInsertion(t *testing.T) {
 
 // TestGroupActionableSuggestions_PureDeletion tests grouping multiple deletions
 func TestGroupActionableSuggestions_PureDeletion(t *testing.T) {
-	structure := &models.DocumentStructure{
-		TextElements: []models.TextElementWithPosition{
+	structure := &DocumentStructure{
+		TextElements: []TextElementWithPosition{
 			{ID: "text-1", Text: "Hello beautiful amazing world", StartIndex: 0, EndIndex: 29},
 		},
 	}
 
-	suggestions := []models.ActionableSuggestion{
+	suggestions := []ActionableSuggestion{
 		{
 			ID: "suggest.delete1",
-			Change: models.SuggestionChange{
+			Change: SuggestionChange{
 				Type:         "delete",
 				OriginalText: "beautiful ",
 			},
@@ -354,7 +353,7 @@ func TestGroupActionableSuggestions_PureDeletion(t *testing.T) {
 		},
 		{
 			ID: "suggest.delete1",
-			Change: models.SuggestionChange{
+			Change: SuggestionChange{
 				Type:         "delete",
 				OriginalText: "amazing ",
 			},
@@ -371,7 +370,7 @@ func TestGroupActionableSuggestions_PureDeletion(t *testing.T) {
 		t.Fatalf("Expected 1 grouped suggestion, got %d", len(result))
 	}
 
-	wantChange := models.SuggestionChange{
+	wantChange := SuggestionChange{
 		Type:         "delete",
 		OriginalText: "beautiful amazing ",
 		NewText:      "",
@@ -388,16 +387,16 @@ func TestGroupActionableSuggestions_PureDeletion(t *testing.T) {
 
 // TestGroupActionableSuggestions_StyleChange tests style-only changes
 func TestGroupActionableSuggestions_StyleChange(t *testing.T) {
-	structure := &models.DocumentStructure{
-		TextElements: []models.TextElementWithPosition{
+	structure := &DocumentStructure{
+		TextElements: []TextElementWithPosition{
 			{ID: "text-1", Text: "Hello world", StartIndex: 0, EndIndex: 11},
 		},
 	}
 
-	suggestions := []models.ActionableSuggestion{
+	suggestions := []ActionableSuggestion{
 		{
 			ID: "suggest.style1",
-			Change: models.SuggestionChange{
+			Change: SuggestionChange{
 				Type:         "style",
 				OriginalText: "Hello",
 				NewText:      "Hello",
@@ -415,7 +414,7 @@ func TestGroupActionableSuggestions_StyleChange(t *testing.T) {
 		t.Fatalf("Expected 1 grouped suggestion, got %d", len(result))
 	}
 
-	wantChange := models.SuggestionChange{
+	wantChange := SuggestionChange{
 		Type:         "style",
 		OriginalText: "Hello",
 		NewText:      "Hello",
@@ -428,8 +427,8 @@ func TestGroupActionableSuggestions_StyleChange(t *testing.T) {
 
 // TestGroupActionableSuggestions_NonContiguous tests that non-contiguous suggestions with same ID stay separate
 func TestGroupActionableSuggestions_NonContiguous(t *testing.T) {
-	structure := &models.DocumentStructure{
-		TextElements: []models.TextElementWithPosition{
+	structure := &DocumentStructure{
+		TextElements: []TextElementWithPosition{
 			{ID: "text-1", Text: "First paragraph. ", StartIndex: 0, EndIndex: 17},
 			{ID: "text-2", Text: "Some filler text here. ", StartIndex: 17, EndIndex: 40},
 			{ID: "text-3", Text: "Second paragraph.", StartIndex: 40, EndIndex: 57},
@@ -437,10 +436,10 @@ func TestGroupActionableSuggestions_NonContiguous(t *testing.T) {
 	}
 
 	// Same ID but non-contiguous positions (gap between them)
-	suggestions := []models.ActionableSuggestion{
+	suggestions := []ActionableSuggestion{
 		{
 			ID: "suggest.same",
-			Change: models.SuggestionChange{
+			Change: SuggestionChange{
 				Type:    "insert",
 				NewText: "A",
 			},
@@ -451,7 +450,7 @@ func TestGroupActionableSuggestions_NonContiguous(t *testing.T) {
 		},
 		{
 			ID: "suggest.same",
-			Change: models.SuggestionChange{
+			Change: SuggestionChange{
 				Type:    "insert",
 				NewText: "B",
 			},
@@ -478,18 +477,18 @@ func TestGroupActionableSuggestions_NonContiguous(t *testing.T) {
 
 // TestGroupActionableSuggestions_VerificationContent tests that verification texts are constructed correctly
 func TestGroupActionableSuggestions_VerificationContent(t *testing.T) {
-	structure := &models.DocumentStructure{
-		TextElements: []models.TextElementWithPosition{
+	structure := &DocumentStructure{
+		TextElements: []TextElementWithPosition{
 			{ID: "text-1", Text: "Before ", StartIndex: 0, EndIndex: 7},
 			{ID: "text-2", Text: "oldtext", StartIndex: 7, EndIndex: 14},
 			{ID: "text-3", Text: " after", StartIndex: 14, EndIndex: 20},
 		},
 	}
 
-	suggestions := []models.ActionableSuggestion{
+	suggestions := []ActionableSuggestion{
 		{
 			ID: "suggest.verify",
-			Change: models.SuggestionChange{
+			Change: SuggestionChange{
 				Type:         "delete",
 				OriginalText: "old",
 			},
@@ -500,7 +499,7 @@ func TestGroupActionableSuggestions_VerificationContent(t *testing.T) {
 		},
 		{
 			ID: "suggest.verify",
-			Change: models.SuggestionChange{
+			Change: SuggestionChange{
 				Type:    "insert",
 				NewText: "new",
 			},
@@ -538,17 +537,17 @@ func TestGroupActionableSuggestions_VerificationContent(t *testing.T) {
 
 // TestGroupActionableSuggestions_SortedOutput tests that output is sorted by position
 func TestGroupActionableSuggestions_SortedOutput(t *testing.T) {
-	structure := &models.DocumentStructure{
-		TextElements: []models.TextElementWithPosition{
+	structure := &DocumentStructure{
+		TextElements: []TextElementWithPosition{
 			{ID: "text-1", Text: "A B C D E", StartIndex: 0, EndIndex: 9},
 		},
 	}
 
 	// Provide suggestions out of order
-	suggestions := []models.ActionableSuggestion{
+	suggestions := []ActionableSuggestion{
 		{
 			ID: "suggest.3",
-			Change: models.SuggestionChange{
+			Change: SuggestionChange{
 				Type:    "insert",
 				NewText: "Z",
 			},
@@ -559,7 +558,7 @@ func TestGroupActionableSuggestions_SortedOutput(t *testing.T) {
 		},
 		{
 			ID: "suggest.1",
-			Change: models.SuggestionChange{
+			Change: SuggestionChange{
 				Type:    "insert",
 				NewText: "X",
 			},
@@ -570,7 +569,7 @@ func TestGroupActionableSuggestions_SortedOutput(t *testing.T) {
 		},
 		{
 			ID: "suggest.2",
-			Change: models.SuggestionChange{
+			Change: SuggestionChange{
 				Type:    "insert",
 				NewText: "Y",
 			},
@@ -603,17 +602,17 @@ func TestGroupActionableSuggestions_SortedOutput(t *testing.T) {
 func TestAreContiguous(t *testing.T) {
 	tests := []struct {
 		name        string
-		suggestions []models.ActionableSuggestion
+		suggestions []ActionableSuggestion
 		expected    bool
 	}{
 		{
 			name:        "empty slice",
-			suggestions: []models.ActionableSuggestion{},
+			suggestions: []ActionableSuggestion{},
 			expected:    true,
 		},
 		{
 			name: "single suggestion",
-			suggestions: []models.ActionableSuggestion{
+			suggestions: []ActionableSuggestion{
 				{Position: struct {
 					StartIndex int64 `json:"start_index"`
 					EndIndex   int64 `json:"end_index"`
@@ -623,7 +622,7 @@ func TestAreContiguous(t *testing.T) {
 		},
 		{
 			name: "adjacent suggestions",
-			suggestions: []models.ActionableSuggestion{
+			suggestions: []ActionableSuggestion{
 				{Position: struct {
 					StartIndex int64 `json:"start_index"`
 					EndIndex   int64 `json:"end_index"`
@@ -637,7 +636,7 @@ func TestAreContiguous(t *testing.T) {
 		},
 		{
 			name: "overlapping suggestions",
-			suggestions: []models.ActionableSuggestion{
+			suggestions: []ActionableSuggestion{
 				{Position: struct {
 					StartIndex int64 `json:"start_index"`
 					EndIndex   int64 `json:"end_index"`
@@ -651,7 +650,7 @@ func TestAreContiguous(t *testing.T) {
 		},
 		{
 			name: "gap of 1 (allowed)",
-			suggestions: []models.ActionableSuggestion{
+			suggestions: []ActionableSuggestion{
 				{Position: struct {
 					StartIndex int64 `json:"start_index"`
 					EndIndex   int64 `json:"end_index"`
@@ -665,7 +664,7 @@ func TestAreContiguous(t *testing.T) {
 		},
 		{
 			name: "gap of 2 (not contiguous)",
-			suggestions: []models.ActionableSuggestion{
+			suggestions: []ActionableSuggestion{
 				{Position: struct {
 					StartIndex int64 `json:"start_index"`
 					EndIndex   int64 `json:"end_index"`
@@ -679,7 +678,7 @@ func TestAreContiguous(t *testing.T) {
 		},
 		{
 			name: "large gap (not contiguous)",
-			suggestions: []models.ActionableSuggestion{
+			suggestions: []ActionableSuggestion{
 				{Position: struct {
 					StartIndex int64 `json:"start_index"`
 					EndIndex   int64 `json:"end_index"`
@@ -707,15 +706,15 @@ func TestAreContiguous(t *testing.T) {
 func TestMergeChanges(t *testing.T) {
 	tests := []struct {
 		name         string
-		suggestions  []models.ActionableSuggestion
+		suggestions  []ActionableSuggestion
 		expectedType string
 		expectedOrig string
 		expectedNew  string
 	}{
 		{
 			name: "pure insertion",
-			suggestions: []models.ActionableSuggestion{
-				{Change: models.SuggestionChange{Type: "insert", NewText: "hello"}},
+			suggestions: []ActionableSuggestion{
+				{Change: SuggestionChange{Type: "insert", NewText: "hello"}},
 			},
 			expectedType: "insert",
 			expectedOrig: "",
@@ -723,8 +722,8 @@ func TestMergeChanges(t *testing.T) {
 		},
 		{
 			name: "pure deletion",
-			suggestions: []models.ActionableSuggestion{
-				{Change: models.SuggestionChange{Type: "delete", OriginalText: "goodbye"}},
+			suggestions: []ActionableSuggestion{
+				{Change: SuggestionChange{Type: "delete", OriginalText: "goodbye"}},
 			},
 			expectedType: "delete",
 			expectedOrig: "goodbye",
@@ -732,9 +731,9 @@ func TestMergeChanges(t *testing.T) {
 		},
 		{
 			name: "insert then delete (replacement)",
-			suggestions: []models.ActionableSuggestion{
-				{Change: models.SuggestionChange{Type: "insert", NewText: "new"}},
-				{Change: models.SuggestionChange{Type: "delete", OriginalText: "old"}},
+			suggestions: []ActionableSuggestion{
+				{Change: SuggestionChange{Type: "insert", NewText: "new"}},
+				{Change: SuggestionChange{Type: "delete", OriginalText: "old"}},
 			},
 			expectedType: "replace",
 			expectedOrig: "old",
@@ -742,9 +741,9 @@ func TestMergeChanges(t *testing.T) {
 		},
 		{
 			name: "delete then insert (replacement)",
-			suggestions: []models.ActionableSuggestion{
-				{Change: models.SuggestionChange{Type: "delete", OriginalText: "old"}},
-				{Change: models.SuggestionChange{Type: "insert", NewText: "new"}},
+			suggestions: []ActionableSuggestion{
+				{Change: SuggestionChange{Type: "delete", OriginalText: "old"}},
+				{Change: SuggestionChange{Type: "insert", NewText: "new"}},
 			},
 			expectedType: "replace",
 			expectedOrig: "old",
@@ -752,9 +751,9 @@ func TestMergeChanges(t *testing.T) {
 		},
 		{
 			name: "multiple insertions",
-			suggestions: []models.ActionableSuggestion{
-				{Change: models.SuggestionChange{Type: "insert", NewText: "hello "}},
-				{Change: models.SuggestionChange{Type: "insert", NewText: "world"}},
+			suggestions: []ActionableSuggestion{
+				{Change: SuggestionChange{Type: "insert", NewText: "hello "}},
+				{Change: SuggestionChange{Type: "insert", NewText: "world"}},
 			},
 			expectedType: "insert",
 			expectedOrig: "",
@@ -762,9 +761,9 @@ func TestMergeChanges(t *testing.T) {
 		},
 		{
 			name: "multiple deletions",
-			suggestions: []models.ActionableSuggestion{
-				{Change: models.SuggestionChange{Type: "delete", OriginalText: "foo "}},
-				{Change: models.SuggestionChange{Type: "delete", OriginalText: "bar"}},
+			suggestions: []ActionableSuggestion{
+				{Change: SuggestionChange{Type: "delete", OriginalText: "foo "}},
+				{Change: SuggestionChange{Type: "delete", OriginalText: "bar"}},
 			},
 			expectedType: "delete",
 			expectedOrig: "foo bar",
@@ -772,10 +771,10 @@ func TestMergeChanges(t *testing.T) {
 		},
 		{
 			name: "complex replacement (insert, delete, insert)",
-			suggestions: []models.ActionableSuggestion{
-				{Change: models.SuggestionChange{Type: "insert", NewText: "Build "}},
-				{Change: models.SuggestionChange{Type: "delete", OriginalText: "Y"}},
-				{Change: models.SuggestionChange{Type: "insert", NewText: "y"}},
+			suggestions: []ActionableSuggestion{
+				{Change: SuggestionChange{Type: "insert", NewText: "Build "}},
+				{Change: SuggestionChange{Type: "delete", OriginalText: "Y"}},
+				{Change: SuggestionChange{Type: "insert", NewText: "y"}},
 			},
 			expectedType: "replace",
 			expectedOrig: "Y",
@@ -783,8 +782,8 @@ func TestMergeChanges(t *testing.T) {
 		},
 		{
 			name: "style change only",
-			suggestions: []models.ActionableSuggestion{
-				{Change: models.SuggestionChange{Type: "style", OriginalText: "text", NewText: "text"}},
+			suggestions: []ActionableSuggestion{
+				{Change: SuggestionChange{Type: "style", OriginalText: "text", NewText: "text"}},
 			},
 			expectedType: "style",
 			expectedOrig: "text",

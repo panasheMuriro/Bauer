@@ -3,13 +3,11 @@ package gdocs
 import (
 	"context"
 	"fmt"
-
-	"bauer/internal/models"
 )
 
 // FetchComments fetches all comments from the document using Drive API.
-func (c *Client) FetchComments(ctx context.Context, docID string) ([]models.Comment, error) {
-	var comments []models.Comment
+func (c *Client) FetchComments(ctx context.Context, docID string) ([]Comment, error) {
+	var comments []Comment
 	pageToken := ""
 
 	for {
@@ -27,7 +25,7 @@ func (c *Client) FetchComments(ctx context.Context, docID string) ([]models.Comm
 		}
 
 		for _, c := range resp.Comments {
-			comment := models.Comment{
+			comment := Comment{
 				ID:           c.Id,
 				Content:      c.Content,
 				CreatedTime:  c.CreatedTime,
@@ -45,7 +43,7 @@ func (c *Client) FetchComments(ctx context.Context, docID string) ([]models.Comm
 			}
 
 			for _, r := range c.Replies {
-				reply := models.Reply{
+				reply := Reply{
 					ID:          r.Id,
 					Content:     r.Content,
 					CreatedTime: r.CreatedTime,

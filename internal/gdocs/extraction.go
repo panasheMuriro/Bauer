@@ -1,7 +1,6 @@
 package gdocs
 
 import (
-	"bauer/internal/models"
 	"context"
 	"fmt"
 	"strings"
@@ -25,8 +24,8 @@ func (c *Client) FetchDocument(ctx context.Context, docID string) (*docs.Documen
 // ExtractSuggestions walks through the document content and extracts all suggestions.
 // TODO this and all sub functions can be made concurrent for speed
 // TODO add recursion depth control on this and sub functions
-func ExtractSuggestions(doc *docs.Document) []models.Suggestion {
-	var suggestions []models.Suggestion
+func ExtractSuggestions(doc *docs.Document) []Suggestion {
+	var suggestions []Suggestion
 
 	if doc.Body != nil {
 		for _, elem := range doc.Body.Content {
@@ -55,11 +54,11 @@ func ExtractSuggestions(doc *docs.Document) []models.Suggestion {
 
 // BuildDocumentStructure builds a comprehensive structure of the document.
 // TODO this should be combined with ExtractSuggestions to avoid multiple traversals of the same document
-func BuildDocumentStructure(doc *docs.Document) *models.DocumentStructure {
-	structure := &models.DocumentStructure{
-		Headings:     []models.DocumentHeading{},
-		Tables:       []models.TableRange{},
-		TextElements: []models.TextElementWithPosition{},
+func BuildDocumentStructure(doc *docs.Document) *DocumentStructure {
+	structure := &DocumentStructure{
+		Headings:     []DocumentHeading{},
+		Tables:       []TableRange{},
+		TextElements: []TextElementWithPosition{},
 	}
 
 	var fullTextBuilder strings.Builder
@@ -84,7 +83,7 @@ func BuildDocumentStructure(doc *docs.Document) *models.DocumentStructure {
 			for _, paraElem := range elem.Paragraph.Elements {
 				if paraElem.TextRun != nil {
 					textElementCounter++
-					structure.TextElements = append(structure.TextElements, models.TextElementWithPosition{
+					structure.TextElements = append(structure.TextElements, TextElementWithPosition{
 						ID:         fmt.Sprintf("text-%d", textElementCounter),
 						Text:       paraElem.TextRun.Content,
 						StartIndex: paraElem.StartIndex,
@@ -100,20 +99,20 @@ func BuildDocumentStructure(doc *docs.Document) *models.DocumentStructure {
 		// Extract table structure
 		if elem.Table != nil {
 			tableCounter++
-			tableRange := models.TableRange{
+			tableRange := TableRange{
 				ID:            fmt.Sprintf("table-%d", tableCounter),
 				Title:         lastParagraphText,
 				StartIndex:    elem.StartIndex,
 				EndIndex:      elem.EndIndex,
-				RowRanges:     []models.RowRange{},
+				RowRanges:     []RowRange{},
 				ColumnHeaders: []string{},
 			}
 
 			for rowIdx, row := range elem.Table.TableRows {
-				rowRange := models.RowRange{
+				rowRange := RowRange{
 					StartIndex: row.StartIndex,
 					EndIndex:   row.EndIndex,
-					CellRanges: []models.CellRange{},
+					CellRanges: []CellRange{},
 				}
 
 				for _, cell := range row.TableCells {
@@ -126,7 +125,7 @@ func BuildDocumentStructure(doc *docs.Document) *models.DocumentStructure {
 						firstLine = firstLine[:50] + "..."
 					}
 
-					cellRange := models.CellRange{
+					cellRange := CellRange{
 						StartIndex: cell.StartIndex,
 						EndIndex:   cell.EndIndex,
 						Text:       cellText,
@@ -143,7 +142,7 @@ func BuildDocumentStructure(doc *docs.Document) *models.DocumentStructure {
 							for _, paraElem := range cellContent.Paragraph.Elements {
 								if paraElem.TextRun != nil {
 									textElementCounter++
-									structure.TextElements = append(structure.TextElements, models.TextElementWithPosition{
+									structure.TextElements = append(structure.TextElements, TextElementWithPosition{
 										ID:         fmt.Sprintf("text-%d", textElementCounter),
 										Text:       paraElem.TextRun.Content,
 										StartIndex: paraElem.StartIndex,
@@ -170,19 +169,19 @@ func BuildDocumentStructure(doc *docs.Document) *models.DocumentStructure {
 }
 
 // BuildActionableSuggestions converts raw suggestions into actionable suggestions with full context.
-func BuildActionableSuggestions(suggestions []models.Suggestion, structure *models.DocumentStructure, metadata *models.MetadataTable) []models.ActionableSuggestion {
-	actionable := make([]models.ActionableSuggestion, 0, len(suggestions))
+func BuildActionableSuggestions(suggestions []Suggestion, structure *DocumentStructure, metadata *MetadataTable) []ActionableSuggestion {
+	actionable := make([]ActionableSuggestion, 0, len(suggestions))
 	const anchorLength = 80
 
 	for _, sugg := range suggestions {
-		as := models.ActionableSuggestion{
+		as := ActionableSuggestion{
 			ID: sugg.ID,
 		}
 
 		as.Position.StartIndex = sugg.StartIndex
 		as.Position.EndIndex = sugg.EndIndex
 
-		as.Location = models.SuggestionLocation{
+		as.Location = SuggestionLocation{
 			Section: "Body",
 		}
 
@@ -210,41 +209,41 @@ func BuildActionableSuggestions(suggestions []models.Suggestion, structure *mode
 		// if sugg.ID == "suggest.r3eqy31u1iac" {
 		// 	fmt.Printf("\n\n SUSPECT 2 \n\n PRECEDING:\n %v \n\n --FOLLOWING:\n\n %v \n\n", precedingText, followingText)
 		// }
-		as.Anchor = models.SuggestionAnchor{
+		as.Anchor = SuggestionAnchor{
 			PrecedingText: precedingText,
 			FollowingText: followingText,
 		}
 
 		switch sugg.Type {
 		case "insertion":
-			as.Change = models.SuggestionChange{
+			as.Change = SuggestionChange{
 				Type:         "insert",
 				OriginalText: "",
 				NewText:      sugg.Content,
 			}
-			as.Verification = models.SuggestionVerification{
+			as.Verification = SuggestionVerification{
 				TextBeforeChange: precedingText + followingText,
 				TextAfterChange:  precedingText + sugg.Content + followingText,
 			}
 
 		case "deletion":
-			as.Change = models.SuggestionChange{
+			as.Change = SuggestionChange{
 				Type:         "delete",
 				OriginalText: sugg.Content,
 				NewText:      "",
 			}
-			as.Verification = models.SuggestionVerification{
+			as.Verification = SuggestionVerification{
 				TextBeforeChange: precedingText + sugg.Content + followingText,
 				TextAfterChange:  precedingText + followingText,
 			}
 
 		case "text_style_change":
-			as.Change = models.SuggestionChange{
+			as.Change = SuggestionChange{
 				Type:         "style",
 				OriginalText: sugg.Content,
 				NewText:      sugg.Content,
 			}
-			as.Verification = models.SuggestionVerification{
+			as.Verification = SuggestionVerification{
 				TextBeforeChange: precedingText + sugg.Content + followingText,
 				TextAfterChange:  precedingText + sugg.Content + followingText,
 			}
@@ -257,7 +256,7 @@ func BuildActionableSuggestions(suggestions []models.Suggestion, structure *mode
 }
 
 // ExtractMetadataTable extracts the metadata table from the beginning of the document.
-func ExtractMetadataTable(doc *docs.Document) *models.MetadataTable {
+func ExtractMetadataTable(doc *docs.Document) *MetadataTable {
 	if doc.Body == nil || doc.Body.Content == nil {
 		return nil
 	}
@@ -288,7 +287,7 @@ func ExtractMetadataTable(doc *docs.Document) *models.MetadataTable {
 		return nil
 	}
 
-	metadata := &models.MetadataTable{
+	metadata := &MetadataTable{
 		Raw:             make(map[string]string),
 		TableStartIndex: tableStartIndex,
 		TableEndIndex:   tableEndIndex,
@@ -329,7 +328,7 @@ func ExtractMetadataTable(doc *docs.Document) *models.MetadataTable {
 
 // processStructuralElement recursively processes a structural element (paragraph, table, TOC)
 // to find and extract suggestions.
-func processStructuralElement(elem *docs.StructuralElement, suggestions *[]models.Suggestion) {
+func processStructuralElement(elem *docs.StructuralElement, suggestions *[]Suggestion) {
 	if elem == nil {
 		return
 	}
@@ -348,7 +347,7 @@ func processStructuralElement(elem *docs.StructuralElement, suggestions *[]model
 }
 
 // processParagraph iterates through paragraph elements to extract suggestions.
-func processParagraph(para *docs.Paragraph, suggestions *[]models.Suggestion) {
+func processParagraph(para *docs.Paragraph, suggestions *[]Suggestion) {
 	if para == nil {
 		return
 	}
@@ -358,7 +357,7 @@ func processParagraph(para *docs.Paragraph, suggestions *[]models.Suggestion) {
 }
 
 // processTable iterates through table rows and cells to extract suggestions recursively.
-func processTable(table *docs.Table, suggestions *[]models.Suggestion) {
+func processTable(table *docs.Table, suggestions *[]Suggestion) {
 	if table == nil {
 		return
 	}
@@ -373,13 +372,13 @@ func processTable(table *docs.Table, suggestions *[]models.Suggestion) {
 
 // processParagraphElement inspects a single paragraph element (TextRun) for suggested insertions,
 // deletions, or text style changes.
-func processParagraphElement(paraElem *docs.ParagraphElement, suggestions *[]models.Suggestion) {
+func processParagraphElement(paraElem *docs.ParagraphElement, suggestions *[]Suggestion) {
 	if paraElem.TextRun != nil {
 		tr := paraElem.TextRun
 
 		if len(tr.SuggestedInsertionIds) > 0 {
 			for _, suggID := range tr.SuggestedInsertionIds {
-				*suggestions = append(*suggestions, models.Suggestion{
+				*suggestions = append(*suggestions, Suggestion{
 					ID:         suggID,
 					Type:       "insertion",
 					Content:    tr.Content,
@@ -391,7 +390,7 @@ func processParagraphElement(paraElem *docs.ParagraphElement, suggestions *[]mod
 
 		if len(tr.SuggestedDeletionIds) > 0 {
 			for _, suggID := range tr.SuggestedDeletionIds {
-				*suggestions = append(*suggestions, models.Suggestion{
+				*suggestions = append(*suggestions, Suggestion{
 					ID:         suggID,
 					Type:       "deletion",
 					Content:    tr.Content,
@@ -403,7 +402,7 @@ func processParagraphElement(paraElem *docs.ParagraphElement, suggestions *[]mod
 
 		if tr.SuggestedTextStyleChanges != nil {
 			for suggID := range tr.SuggestedTextStyleChanges {
-				*suggestions = append(*suggestions, models.Suggestion{
+				*suggestions = append(*suggestions, Suggestion{
 					ID:         suggID,
 					Type:       "text_style_change",
 					Content:    tr.Content,
@@ -417,7 +416,7 @@ func processParagraphElement(paraElem *docs.ParagraphElement, suggestions *[]mod
 
 // extractHeading attempts to extract heading info from a structural element.
 // Returns nil if the element is not a heading.
-func extractHeading(elem *docs.StructuralElement) *models.DocumentHeading {
+func extractHeading(elem *docs.StructuralElement) *DocumentHeading {
 	if elem.Paragraph == nil || elem.Paragraph.ParagraphStyle == nil {
 		return nil
 	}
@@ -451,7 +450,7 @@ func extractHeading(elem *docs.StructuralElement) *models.DocumentHeading {
 		}
 	}
 
-	return &models.DocumentHeading{
+	return &DocumentHeading{
 		Text:       strings.TrimSpace(headingText.String()),
 		Level:      headingLevel,
 		StartIndex: elem.StartIndex,
@@ -484,7 +483,7 @@ func extractCellText(cell *docs.TableCell) string {
 
 // findParentHeading finds the nearest heading that comes before the given position.
 // It returns the heading text and its level.
-func findParentHeading(structure *models.DocumentStructure, position int64) (string, int) {
+func findParentHeading(structure *DocumentStructure, position int64) (string, int) {
 	var parentHeading string
 	var headingLevel int
 
@@ -501,10 +500,10 @@ func findParentHeading(structure *models.DocumentStructure, position int64) (str
 }
 
 // findTableLocation determines if a position is within a table and returns its location details.
-func findTableLocation(structure *models.DocumentStructure, position int64) *models.TableLocation {
+func findTableLocation(structure *DocumentStructure, position int64) *TableLocation {
 	for tableIdx, table := range structure.Tables {
 		if position >= table.StartIndex && position <= table.EndIndex {
-			loc := &models.TableLocation{
+			loc := &TableLocation{
 				TableIndex: tableIdx + 1,
 				TableID:    table.ID,
 				TableTitle: table.Title,
@@ -542,7 +541,7 @@ func findTableLocation(structure *models.DocumentStructure, position int64) *mod
 // getTextAround extracts text before and after a given position.
 // Handles partial text extraction from elements that span the positions.
 // The anchorLength parameter controls how much context to include.
-func getTextAround(structure *models.DocumentStructure, startIndex, endIndex int64, anchorLength int) (before, after string) {
+func getTextAround(structure *DocumentStructure, startIndex, endIndex int64, anchorLength int) (before, after string) {
 	var beforeBuilder strings.Builder
 	var afterBuilder strings.Builder
 

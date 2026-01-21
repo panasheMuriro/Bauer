@@ -1,4 +1,4 @@
-package models
+package gdocs
 
 type Suggestion struct {
 	ID         string `json:"id"`

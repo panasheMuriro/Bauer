@@ -1,7 +1,6 @@
 package gdocs
 
 import (
-	"bauer/internal/models"
 	"sort"
 	"strings"
 )
@@ -9,19 +8,19 @@ import (
 // GroupActionableSuggestions groups related atomic suggestions into logical units.
 // Suggestions are grouped by their ID and must be contiguous in position.
 // Returns a slice of grouped suggestions ready for LLM consumption.
-func GroupActionableSuggestions(suggestions []models.ActionableSuggestion, structure *models.DocumentStructure) []models.GroupedActionableSuggestion {
+func GroupActionableSuggestions(suggestions []ActionableSuggestion, structure *DocumentStructure) []GroupedActionableSuggestion {
 	if len(suggestions) == 0 {
-		return []models.GroupedActionableSuggestion{}
+		return []GroupedActionableSuggestion{}
 	}
 
 	// Group suggestions by ID
-	groupsByID := make(map[string][]models.ActionableSuggestion)
+	groupsByID := make(map[string][]ActionableSuggestion)
 	for _, sugg := range suggestions {
 		groupsByID[sugg.ID] = append(groupsByID[sugg.ID], sugg)
 	}
 
 	// Process each group
-	var grouped []models.GroupedActionableSuggestion
+	var grouped []GroupedActionableSuggestion
 	for id, group := range groupsByID {
 		// Sort by start position to ensure correct ordering
 		sort.Slice(group, func(i, j int) bool {
@@ -52,7 +51,7 @@ func GroupActionableSuggestions(suggestions []models.ActionableSuggestion, struc
 
 // areContiguous checks if suggestions are adjacent or overlapping in position.
 // This validates that they're truly part of the same logical change.
-func areContiguous(suggestions []models.ActionableSuggestion) bool {
+func areContiguous(suggestions []ActionableSuggestion) bool {
 	if len(suggestions) <= 1 {
 		return true
 	}
@@ -73,12 +72,12 @@ func areContiguous(suggestions []models.ActionableSuggestion) bool {
 
 // convertSingleSuggestion converts a single ActionableSuggestion to GroupedActionableSuggestion.
 // Used for suggestions that don't need grouping.
-func convertSingleSuggestion(sugg models.ActionableSuggestion) models.GroupedActionableSuggestion {
-	return models.GroupedActionableSuggestion{
+func convertSingleSuggestion(sugg ActionableSuggestion) GroupedActionableSuggestion {
+	return GroupedActionableSuggestion{
 		ID:     sugg.ID,
 		Anchor: sugg.Anchor,
 		Change: sugg.Change,
-		Verification: models.SuggestionVerification{
+		Verification: SuggestionVerification{
 			TextBeforeChange: sugg.Verification.TextBeforeChange,
 			TextAfterChange:  sugg.Verification.TextAfterChange,
 		},
@@ -90,13 +89,13 @@ func convertSingleSuggestion(sugg models.ActionableSuggestion) models.GroupedAct
 			StartIndex: sugg.Position.StartIndex,
 			EndIndex:   sugg.Position.EndIndex,
 		},
-		AtomicChanges: []models.SuggestionChange{sugg.Change},
+		AtomicChanges: []SuggestionChange{sugg.Change},
 		AtomicCount:   1,
 	}
 }
 
 // mergeSuggestions combines multiple atomic suggestions into a single grouped suggestion.
-func mergeSuggestions(id string, suggestions []models.ActionableSuggestion, structure *models.DocumentStructure) models.GroupedActionableSuggestion {
+func mergeSuggestions(id string, suggestions []ActionableSuggestion, structure *DocumentStructure) GroupedActionableSuggestion {
 	if len(suggestions) == 1 {
 		return convertSingleSuggestion(suggestions[0])
 	}
@@ -109,7 +108,7 @@ func mergeSuggestions(id string, suggestions []models.ActionableSuggestion, stru
 	precedingText, followingText := getTextAround(structure, first.Position.StartIndex, last.Position.EndIndex, groupedAnchorLength)
 
 	// Collect atomic changes
-	atomicChanges := make([]models.SuggestionChange, len(suggestions))
+	atomicChanges := make([]SuggestionChange, len(suggestions))
 	for i, sugg := range suggestions {
 		atomicChanges[i] = sugg.Change
 	}
@@ -130,14 +129,14 @@ func mergeSuggestions(id string, suggestions []models.ActionableSuggestion, stru
 		newText = mergedChange.NewText
 	}
 
-	verification := models.SuggestionVerification{
+	verification := SuggestionVerification{
 		TextBeforeChange: precedingText + originalText + followingText,
 		TextAfterChange:  precedingText + newText + followingText,
 	}
 
-	return models.GroupedActionableSuggestion{
+	return GroupedActionableSuggestion{
 		ID: id,
-		Anchor: models.SuggestionAnchor{
+		Anchor: SuggestionAnchor{
 			PrecedingText: precedingText,
 			FollowingText: followingText,
 		},
@@ -158,7 +157,7 @@ func mergeSuggestions(id string, suggestions []models.ActionableSuggestion, stru
 
 // mergeChanges combines multiple atomic changes into a single net change.
 // Handles sequences like: insert "Build " + delete "Y" + insert "y" -> replace "Y" with "Build y"
-func mergeChanges(suggestions []models.ActionableSuggestion) models.SuggestionChange {
+func mergeChanges(suggestions []ActionableSuggestion) SuggestionChange {
 	var originalParts []string
 	var newParts []string
 	hasInsertions := false
@@ -196,7 +195,7 @@ func mergeChanges(suggestions []models.ActionableSuggestion) models.SuggestionCh
 		changeType = "style"
 	}
 
-	return models.SuggestionChange{
+	return SuggestionChange{
 		Type:         changeType,
 		OriginalText: originalText,
 		NewText:      newText,
