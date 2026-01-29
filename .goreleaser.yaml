@@ -49,3 +49,17 @@ release:
     ---
 
     Released by [GoReleaser](https://github.com/goreleaser/goreleaser).
+
+brews:
+  - name: bauer
+    repository:
+      owner: britneywwc
+      name: homebrew-bauer
+    homepage: "https://github.com/muhammadbassiony/Bauer"
+    description: "Automate BAU tasks with ease"
+
+snapcrafts:
+  - name: bauer
+    summary: Automate BAU tasks with ease
+    description: Go application that extracts document content, suggestions (proposed edits), and comments from Google Docs using the Google Docs API and Google Drive API.
+    publish: true  # Set to false if you want to test first
