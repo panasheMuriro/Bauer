@@ -6,9 +6,6 @@ A proof-of-concept Go application that extracts document content, suggestions (p
 1. Install [`go`](https://golang.org/dl/)
 2. Install [`task`](https://taskfile.dev/docs/installation)
 3. Install [Copilot CLI](https://docs.github.com/en/copilot/how-tos/set-up/install-copilot-cli)
-4. Clone this repository
-5. Build the binary file
-`task build`
 
 ## Configuration
 1. Get credentials from Google Cloud service or Bitwarden (internally)
@@ -22,16 +19,19 @@ A proof-of-concept Go application that extracts document content, suggestions (p
 4. If you are not using Bitwarden credentials, make sure to enable APIs in GCP: Google Docs API, Google Drive API
 
 ## Usage
-1. Build the project
-`task build`
-2. Copy built binary file `bauer` and `credentials.json` to project repository
+1. Clone this repository
+2. Build the project
+```
+task build
+```
+3. Copy built binary file `bauer` and `credentials.json` to project repository
 ```bash
 cp bauer <target-project-directory>
 cp credentials.json <target-project-directory>
 ```
-3. Go to your target project directory
-4. Get document ID from Google Document
-5. Run Bauer
+4. Go to your target project directory
+5. Get document ID from Google Document
+6. Run Bauer
 ```bash
 ./bauer --doc-id <your-document-id> --credentials ./credentials.json
 ```
