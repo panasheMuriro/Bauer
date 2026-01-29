@@ -4,12 +4,10 @@ A proof-of-concept Go application that extracts document content, suggestions (p
 
 ## Installation
 1. Install [`go`](https://golang.org/dl/)
-2. Clone this repository.
-``` bash
-git clone https://github.com/muhammadbassiony/Bauer.git 
-```
-3. Install [`task`](https://taskfile.dev/docs/installation)
-4. Build the binary file.
+2. Install [`task`](https://taskfile.dev/docs/installation)
+3. Install [Copilot CLI](https://docs.github.com/en/copilot/how-tos/set-up/install-copilot-cli)
+4. Clone this repository
+5. Build the binary file
 `task build`
 
 ## Configuration
