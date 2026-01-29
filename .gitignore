@@ -5,8 +5,12 @@ bauer-log.json
 *.log
 /.github/copilot-instructions.md
 .env.local-e
+.env.local
 # BAU output
 bauer-output/
 .DS_Store
 .vscode/
 *.exe
+bauer
+# Added by goreleaser init:
+dist/

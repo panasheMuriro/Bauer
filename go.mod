@@ -3,6 +3,7 @@ module bauer
 go 1.24.0
 
 require (
+	github.com/github/copilot-sdk/go v0.1.15
 	github.com/google/go-cmp v0.7.0
 	golang.org/x/oauth2 v0.33.0
 	google.golang.org/api v0.257.0
@@ -13,7 +14,6 @@ require (
 	cloud.google.com/go/auth/oauth2adapt v0.2.8 // indirect
 	cloud.google.com/go/compute/metadata v0.9.0 // indirect
 	github.com/felixge/httpsnoop v1.0.4 // indirect
-	github.com/github/copilot-sdk/go v0.1.15 // indirect
 	github.com/go-logr/logr v1.4.3 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/google/jsonschema-go v0.4.2 // indirect
