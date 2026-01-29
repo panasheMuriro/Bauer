@@ -17,8 +17,9 @@ brew install britneywwc/bauer
 
 ## Configuration
 1. Install [Copilot CLI](https://docs.github.com/en/copilot/how-tos/set-up/install-copilot-cli)
-2. Get credentials from Google Cloud service or Bitwarden (internally)
-3. Fill up `credentials.json` with Google Cloud credentials.
+2. Create `credentials.json` file and copy the structure from the [default file](https://github.com/muhammadbassiony/Bauer/blob/main/credentials.json)
+3. Get credentials from Google Cloud service or Bitwarden (internally)
+4. Fill up `credentials.json` with Google Cloud credentials.
    Required fields: 
 - `type`: "service_account"
 - `project_id`: GCP project ID
