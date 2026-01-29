@@ -47,7 +47,7 @@ bauer --doc-id <your-document-id> --credentials ./credentials.json
 | `--chunk-size` | int | `30` | Number of suggestions per chunk sent to Copilot |
 | `--dry-run` | bool | `false` | Run extraction and planning only; skip Copilot execution and PR creation |
 | `--output-dir` | string | `bauer-output` | Output directory for generated files |
-| `--model` | string | `gpt-4` | Copilot model to use for code generation |
+| `--model` | string | `gpt-5-mini` | Copilot model to use for code generation |
 
 ### Examples
 
