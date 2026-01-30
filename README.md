@@ -22,7 +22,7 @@ brew update
 brew upgrade bauer
 ```
 
-N.B. You need to install [Copilot CLI](https://docs.github.com/en/copilot/how-tos/set-up/install-copilot-cli) Copilot CLI which is used by Bauer.
+N.B. You need to install [Copilot CLI](https://docs.github.com/en/copilot/how-tos/set-up/install-copilot-cli) which is used by Bauer.
 
 ## Configuration
 1. Install [Copilot CLI](https://docs.github.com/en/copilot/how-tos/set-up/install-copilot-cli)
