@@ -17,7 +17,8 @@ import (
 func run() error {
 	startTime := time.Now()
 
-	fmt.Println("BAUer - BAU maker")
+	fmt.Println(strings.Repeat("=", 80))
+	fmt.Println("Bauer - A tool to automate BAU tasks")
 	fmt.Println(strings.Repeat("=", 80))
 	fmt.Println()
 
