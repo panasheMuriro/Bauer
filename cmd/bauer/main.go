@@ -80,7 +80,7 @@ func run() error {
 	}
 
 	// Write JSON to file
-	outputFile := "doc-suggestions.json"
+	outputFile := "bauer-doc-suggestions.json"
 	err = os.WriteFile(outputFile, outputJSON, 0644)
 	if err != nil {
 		slog.Error("Failed to write output file", slog.String("error", err.Error()))
