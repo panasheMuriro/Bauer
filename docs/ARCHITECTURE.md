@@ -51,6 +51,6 @@ A few specifics worth knowing:
 ## Understanding the output files
 
 - bauer-log.json: JSON logs (debug-level) for the entire run.
-- doc-suggestions.json: Full `ProcessingResult` (document metadata + actionable + grouped suggestions). Useful for debugging or re-running prompt generation.
+- bauer-doc-suggestions.json: Full `ProcessingResult` (document metadata + actionable + grouped suggestions). Useful for debugging or re-running prompt generation.
 - bauer-output/chunk-X-of-Y.md: One prompt per chunk. Each file embeds the instruction template, Vanilla patterns reference, and the JSON suggestions for that chunk.
 
