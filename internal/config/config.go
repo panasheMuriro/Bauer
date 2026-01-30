@@ -58,13 +58,44 @@ func Load() (*Config, error) {
 
 	// Custom usage message
 	flag.Usage = func() {
-		fmt.Fprintf(os.Stderr, "Usage of %s:\n", os.Args[0])
-		flag.PrintDefaults()
-		fmt.Fprintln(os.Stderr, "\nExample:")
-		fmt.Fprintf(os.Stderr, "  %s --doc-id \"1b9...\" --credentials ./creds.json --dry-run\n", os.Args[0])
+		fmt.Fprintf(os.Stderr, "Usage:\n\n")
+		fmt.Fprintf(os.Stderr, "\t%s --doc-id <doc-id> --credentials <path> [flags]\n\n", os.Args[0])
+		fmt.Fprintf(os.Stderr, "Flags:\n\n")
+
+		// Manually format flags
+		flags := []struct {
+			name string
+			typ  string
+			desc string
+		}{
+			{"--doc-id", "<string>", "Google Doc ID to extract feedback from (required)"},
+			{"--credentials", "<string>", "Path to service account JSON (required)"},
+			{"--dry-run", "", "Run extraction and planning only; skip Copilot and PR creation"},
+			{"--page-refresh", "", "Use page refresh mode with page-refresh-instructions template"},
+			{"--chunk-size", "<int>", "Total number of chunks to create (default: 1, or 5 if --page-refresh is set)"},
+			{"--output-dir", "<string>", "Directory for generated prompt files (default: bauer-output)"},
+			{"--model", "<string>", "Copilot model to use for sessions (default: gpt-5-mini-high)"},
+			{"--summary-model", "<string>", "Copilot model to use for summary session (default: gpt-5-mini-high)"},
+		}
+
+		for _, f := range flags {
+			if f.typ != "" {
+				fmt.Fprintf(os.Stderr, "\t%-25s %s\n", f.name+" "+f.typ, f.desc)
+			} else {
+				fmt.Fprintf(os.Stderr, "\t%-25s %s\n", f.name, f.desc)
+			}
+		}
+
+		fmt.Fprintf(os.Stderr, "\nUse \"%s --help\" to display this message.\n\n", os.Args[0])
 	}
 
 	flag.Parse()
+
+	// If no required flags are provided, show usage and exit
+	if *docID == "" && *credentialsPath == "" {
+		flag.Usage()
+		os.Exit(1)
+	}
 
 	// Determine effective chunk size based on flags
 	effectiveChunkSize := *chunkSize
