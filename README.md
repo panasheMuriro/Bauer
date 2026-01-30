@@ -11,8 +11,15 @@ sudo snap install bauer
 ```
 
 ### Homebrew
+First time installation
 ```
-brew install britneywwc/bauer
+brew install britneywwc/bauer/bauer
+```
+
+Upgrade to a newer version or later
+```
+brew update
+brew upgrade bauer
 ```
 
 N.B. You need to install [Copilot CLI](https://docs.github.com/en/copilot/how-tos/set-up/install-copilot-cli) Copilot CLI which is used by Bauer.
@@ -26,10 +33,7 @@ N.B. You need to install [Copilot CLI](https://docs.github.com/en/copilot/how-to
 
 ## Usage
 1. Install bauer using the instructions above
-2. Check that `bauer` is installed
-```
-bauer
-```
+2. Check that `copilot` and `bauer` are installed
 3. Get document ID from Google Document & share the document with the service account
 4. Run Bauer
 ```bash
