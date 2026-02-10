@@ -1,6 +1,7 @@
 package config
 
 import (
+	"bauer/internal/gdocs"
 	"errors"
 	"flag"
 	"fmt"
@@ -150,6 +151,11 @@ func (c *Config) Validate() error {
 	}
 	if info.IsDir() {
 		return fmt.Errorf("credentials path is a directory, expected a file: %s", c.CredentialsPath)
+	}
+
+	// Validate credentials content
+	if err := gdocs.ValidateCredentialsFile(c.CredentialsPath); err != nil {
+		return fmt.Errorf("%w", err)
 	}
 
 	return nil
