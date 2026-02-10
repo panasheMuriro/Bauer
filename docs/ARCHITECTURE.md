@@ -27,7 +27,7 @@ flowchart TD
     E --> F[Build doc structure + metadata]
     F --> G[Build actionable suggestions]
     G --> H[Group by location + merge by ID]
-    H --> I[Filter metadata table suggestions]
+    H --> I[Include metadata table suggestions]
     I --> J[Render chunk prompts]
     J --> K{Dry run?}
     K -- Yes --> L[Write outputs + stop]
@@ -44,6 +44,7 @@ A few specifics worth knowing:
 - Style suggestions are currently skipped entirely (only insert/delete operations become actionable suggestions).
 - Anchor text is generated from the surrounding document text to help Copilot find exact matches.
 - Suggestions are grouped first by logical location (section + heading + table), then merged by suggestion ID to form a single change.
+- Metadata table suggestions are included; downstream tools should map them via metadata tags in the target repo.
 - Chunking is by number of location groups (not “suggestions per chunk”).
 - Each chunk file includes: instructions → Vanilla pattern references → JSON suggestions.
 - Copilot runs one session per chunk, streaming output to the terminal; summary is a separate session only when there are multiple chunks.
@@ -53,4 +54,3 @@ A few specifics worth knowing:
 - bauer-log.json: JSON logs (debug-level) for the entire run.
 - bauer-doc-suggestions.json: Full `ProcessingResult` (document metadata + actionable + grouped suggestions). Useful for debugging or re-running prompt generation.
 - bauer-output/chunk-X-of-Y.md: One prompt per chunk. Each file embeds the instruction template, Vanilla patterns reference, and the JSON suggestions for that chunk.
-
