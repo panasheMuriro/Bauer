@@ -21,7 +21,7 @@ func run() error {
 	// 1. Load Configuration
 	cfg, err := config.Load()
 	if err != nil {
-		return fmt.Errorf("error loading configuration: %w", err)
+		return fmt.Errorf("error loading configuration\n%w", err)
 	}
 
 	// 2. Setup Logging
@@ -54,6 +54,21 @@ func run() error {
 	result, err := orch.Execute(ctx, cfg)
 	if err != nil {
 		slog.Error("Orchestration failed", slog.String("error", err.Error()))
+		// Check if the error is credentials-related and provide more context
+		errMsg := err.Error()
+		if strings.Contains(errMsg, "credentials") || strings.Contains(errMsg, "private_key") || strings.Contains(errMsg, "client_email") {
+			fmt.Fprintf(os.Stderr, "\n⚠️  CREDENTIALS ERROR:\n")
+			fmt.Fprintf(os.Stderr, "  %v\n\n", err)
+			fmt.Fprintf(os.Stderr, "Please verify:\n")
+			fmt.Fprintf(os.Stderr, "  1. Credentials file exists at: %s\n", cfg.CredentialsPath)
+			fmt.Fprintf(os.Stderr, "  2. Credentials file is valid JSON\n")
+			fmt.Fprintf(os.Stderr, "  3. Credentials file contains required fields:\n")
+			fmt.Fprintf(os.Stderr, "     - type\n")
+			fmt.Fprintf(os.Stderr, "     - project_id\n")
+			fmt.Fprintf(os.Stderr, "     - private_key\n")
+			fmt.Fprintf(os.Stderr, "     - client_email\n")
+			fmt.Fprintf(os.Stderr, "     - token_uri\n\n")
+		}
 		return err
 	}
 
