@@ -16,6 +16,7 @@ func Load() (*Config, error) {
 
 	docID := flag.String("doc-id", "", "Google Doc ID to extract feedback from (required)")
 	credentialsPath := flag.String("credentials", "", "Path to service account JSON (required)")
+	configFile := flag.String("config", "", "Path to JSON config file")
 	dryRun := flag.Bool("dry-run", false, "Run extraction and planning only; skip Copilot and PR creation")
 	chunkSize := flag.Int("chunk-size", 0, "Total number of chunks to create (default: 1, or 5 if --page-refresh is set)")
 	pageRefresh := flag.Bool("page-refresh", false, "Use page refresh mode with page-refresh-instructions template (default chunk size: 5)")
@@ -35,6 +36,7 @@ func Load() (*Config, error) {
 			typ  string
 			desc string
 		}{
+			{"--config", "<string>", "Path to JSON config file"},
 			{"--doc-id", "<string>", "Google Doc ID to extract feedback from (required)"},
 			{"--credentials", "<string>", "Path to service account JSON (required)"},
 			{"--dry-run", "", "Run extraction and planning only; skip Copilot and PR creation"},
@@ -57,6 +59,11 @@ func Load() (*Config, error) {
 	}
 
 	flag.Parse()
+
+	// If --config is provided, load from JSON file
+	if *configFile != "" {
+		return LoadFromJSONFile(*configFile)
+	}
 
 	// If no required flags are provided, show usage and exit
 	if *docID == "" && *credentialsPath == "" {

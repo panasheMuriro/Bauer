@@ -1,6 +1,9 @@
 package config
 
-import "encoding/json"
+import (
+	"encoding/json"
+	"os"
+)
 
 func LoadFromJSON(data []byte) (*Config, error) {
 	var cfg Config
@@ -12,4 +15,12 @@ func LoadFromJSON(data []byte) (*Config, error) {
 	}
 
 	return &cfg, nil
+}
+
+func LoadFromJSONFile(filePath string) (*Config, error) {
+	data, err := os.ReadFile(filePath)
+	if err != nil {
+		return nil, err
+	}
+	return LoadFromJSON(data)
 }
