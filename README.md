@@ -49,6 +49,7 @@ bauer --doc-id <your-document-id> --credentials ./credentials.json
 | `--output-dir` | string | `bauer-output` | Output directory for generated files |
 | `--model` | string | `gpt-5-mini-high` | Copilot model to use for code generation |
 | `--page-refresh` | bool | `false` | Whether this is a page refresh, or the default copy update |
+| `--target-repo` | string | current directory | Path to target repository where tasks should be executed |
 
 ### Examples
 
@@ -78,6 +79,14 @@ bauer --doc-id <your-document-id> \
         --credentials ./credentials.json \
         --model "claude-sonnet-4.5"
 ```
+
+#### Run on a different repository
+```bash
+bauer --doc-id <your-document-id> \
+        --credentials ./credentials.json \
+        --target-repo ../my-other-repo
+```
+
 ### Page refresh
 ```bash
 bauer --doc-id <your-document-id> \

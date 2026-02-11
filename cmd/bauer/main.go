@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"log/slog"
 	"os"
+	"path/filepath"
 	"strings"
 	"time"
 )
@@ -22,6 +23,29 @@ func run() error {
 	cfg, err := config.Load()
 	if err != nil {
 		return fmt.Errorf("error loading configuration\n%w", err)
+	}
+
+	// 1b. Change to target repository if specified
+	if cfg.TargetRepo != "" {
+		// Convert credentials path to absolute before changing directory
+		absCredsPath, err := filepath.Abs(cfg.CredentialsPath)
+		if err != nil {
+			return fmt.Errorf("failed to resolve credentials path: %w", err)
+		}
+		cfg.CredentialsPath = absCredsPath
+
+		// Convert output directory to absolute before changing directory
+		absOutputDir, err := filepath.Abs(cfg.OutputDir)
+		if err != nil {
+			return fmt.Errorf("failed to resolve output directory path: %w", err)
+		}
+		cfg.OutputDir = absOutputDir
+
+		if err := os.Chdir(cfg.TargetRepo); err != nil {
+			return fmt.Errorf("failed to change to target repository %q: %w", cfg.TargetRepo, err)
+		}
+		cwd, _ := os.Getwd()
+		fmt.Printf("Working directory: %s\n\n", cwd)
 	}
 
 	// 2. Setup Logging
