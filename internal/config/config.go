@@ -133,30 +133,32 @@ func (c *Config) Validate() error {
 		return errors.New("missing required flag: --doc-id")
 	}
 
-	if c.CredentialsPath == "" {
-		return errors.New("missing required flag: --credentials")
-	}
-
 	if c.ChunkSize <= 0 {
 		return errors.New("chunk-size must be greater than 0")
 	}
 
+	return ValidateCredentialsPath(c.CredentialsPath)
+}
+
+func ValidateCredentialsPath(path string) error {
+	if path == "" {
+		return errors.New("missing required flag: --credentials")
+	}
 	// Verify credentials file exists
-	info, err := os.Stat(c.CredentialsPath)
+	info, err := os.Stat(path)
 	if os.IsNotExist(err) {
-		return fmt.Errorf("credentials file not found: %s", c.CredentialsPath)
+		return fmt.Errorf("credentials file not found: %s", path)
 	}
 	if err != nil {
 		return fmt.Errorf("error checking credentials file: %w", err)
 	}
 	if info.IsDir() {
-		return fmt.Errorf("credentials path is a directory, expected a file: %s", c.CredentialsPath)
+		return fmt.Errorf("credentials path is a directory, expected a file: %s", path)
 	}
 
 	// Validate credentials content
-	if err := gdocs.ValidateCredentialsFile(c.CredentialsPath); err != nil {
+	if err := gdocs.ValidateCredentialsFile(path); err != nil {
 		return fmt.Errorf("%w", err)
 	}
-
 	return nil
 }
