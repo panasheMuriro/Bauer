@@ -122,24 +122,6 @@ func getLocationKey(loc SuggestionLocation) string {
 	return key
 }
 
-// FilterMetadataSuggestions removes location groups that contain suggestions in the metadata table.
-// This is useful for excluding metadata-related changes from the main processing pipeline.
-// Returns a new slice with only non-metadata location groups.
-func FilterMetadataSuggestions(locationGroups []LocationGroupedSuggestions) []LocationGroupedSuggestions {
-	var filtered []LocationGroupedSuggestions
-
-	for _, group := range locationGroups {
-		// Skip location groups where suggestions are in metadata
-		if group.Location.InMetadata {
-			continue
-		}
-
-		filtered = append(filtered, group)
-	}
-
-	return filtered
-}
-
 // areContiguous checks if suggestions are adjacent or overlapping in position.
 // This validates that they're truly part of the same logical change.
 func areContiguous(suggestions []ActionableSuggestion) bool {

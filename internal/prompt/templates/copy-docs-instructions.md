@@ -52,6 +52,7 @@ Each suggestion in the JSON array is a **LocationGroupedSuggestions** object wit
     "parent_heading": "Section Name", // Optional: Nearest heading above
     "heading_level": 2,               // Optional: Heading level (1-6)
     "in_table": false,                // Whether suggestion is in a table
+    "in_metadata": false,             // True if suggestion comes from the metadata table
     "table": {                        // Optional: Table context if in_table is true
       "table_title": "Pattern Name",  // Pattern name (Hero, Equal Heights, etc.)
       "row_index": 1,
@@ -95,6 +96,34 @@ Process the suggestions **one location at a time, in order**. For each location:
 3. **Apply each change** following the process below
 4. **Verify** before moving to the next suggestion
 
+### Metadata Table Suggestions
+
+If `location.in_metadata` is true, the change came from the document metadata table and likely
+does not appear verbatim in the target HTML content. Instead, map the change to metadata tags
+in the repo that mirror the metadata table entries.
+
+Use this process:
+1. **Identify the metadata key**:
+   - Prefer `location.table.row_header` (the left column label in the metadata table).
+   - Use `location.table.column_header` only if `row_header` is empty.
+2. **Find the tag** in the repo:
+   - Search for tags or markers that match the metadata key (they mirror each table entry).
+   - Use this strict match order:
+     1. Exact text match (`Page title` == `Page title`)
+     2. Case-insensitive match (`Page title` == `page title`)
+     3. Normalized text match (trim + collapse spaces + remove punctuation)
+     4. Snake case match (`Page title` -> `page_title`)
+   - Stop at the first successful match; do not keep searching looser matches afterward.
+   - Look for HTML comments, data attributes, front-matter fields, or template variables.
+3. **Apply the change**:
+   - Update the tag value to match the suggestion's `new_text`.
+   - Do not use anchor text matching for metadata suggestions.
+4. **Verify**:
+   - Confirm the tag value matches `text_after_change`.
+
+If multiple files contain the same metadata tag, prefer the file matching `{{.SuggestedURL}}`.
+If the tag is missing, report it as an error and continue.
+
 ### Application Process
 
 For each suggestion:
@@ -118,6 +147,7 @@ For each suggestion:
 - **Exact matching**: Anchor texts are precise - use them to find locations
 - **Order matters**: Process suggestions in the order provided
 - **Pattern awareness**: If `table_title` indicates a Vanilla pattern, consult the patterns reference below
+- **Metadata tags**: For `in_metadata` suggestions, update the matching tag in the target repo instead of searching for anchors
 - **Style changes**: Some suggestions may be style-only changes (e.g., making text bold, adding emphasis). Use appropriate Vanilla Framework classes and HTML to apply these changes.
 - **Section deletions**: It is expected that some suggestions involve removing entire sections, this is acceptable behavior, ensure proper HTML structure and semantics are maintained. 
 

@@ -37,6 +37,10 @@ type Config struct {
 	// SummaryModel is the Copilot model to use for the summary session.
 	// Default is "gpt-5-mini-high" if not specified.
 	SummaryModel string `json:"summary_model"`
+
+	// TargetRepo is the path (relative or absolute) to the target repository
+	// where tasks should be executed. If not specified, uses the current directory.
+	TargetRepo string `json:"target_repo"`
 }
 
 // Apply default config values

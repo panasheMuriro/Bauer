@@ -2,16 +2,64 @@ package main
 
 import (
 	"bauer/internal/config"
+	"bauer/internal/github"
 	"bauer/internal/orchestrator"
 	"context"
 	"fmt"
+	"log"
 	"log/slog"
 	"os"
+	"path/filepath"
 	"strings"
 	"time"
 )
 
-func run() error {
+func runGithub() {
+	// 1. Parse a GitHub repo (works with all 3 formats)
+	// Using default repo for now
+	defaultRepo := "canonical/canonical.com"
+	repo, err := github.ParseGitHubRepo(defaultRepo)
+	if err != nil {
+		log.Fatal(err)
+	}
+	fmt.Printf("✅ Parsed: %s/%s\n", repo.Owner, repo.Name)
+
+	// 2. Check if gh CLI is installed
+	if !github.IsGhCLIInstalled() {
+		log.Fatal("❌ gh CLI not installed.")
+	}
+	fmt.Println("✅ gh CLI detected")
+
+	// 3. Validate GitHub authentication
+	if err := github.ValidateGitHubAuth(); err != nil {
+		log.Fatal("❌ Not authenticated. Run: gh auth login")
+	}
+	fmt.Println("✅ GitHub authenticated")
+
+	// 4. Clone/update repo (creates temp directory)
+	localPath := "/tmp/test-bauer-repo"
+	if err := github.CloneOrUpdateRepo(repo, localPath); err != nil {
+		log.Fatal(err)
+	}
+	fmt.Printf("✅ Repo ready at: %s\n", localPath)
+
+	// 5. Create feature branch
+	// Using default branch name for now
+	branchName := "bauer/test-phase1"
+	if err := github.CreateFeatureBranch(localPath, branchName); err != nil {
+		log.Fatal(err)
+	}
+	fmt.Printf("✅ Branch created: %s\n", branchName)
+
+	// 6. Check current branch
+	current, err := github.GetCurrentBranch(localPath)
+	if err != nil {
+		log.Fatal(err)
+	}
+	fmt.Printf("✅ Currently on: %s\n", current)
+}
+
+func runBauer() error {
 
 	fmt.Println(strings.Repeat("=", 80))
 	fmt.Println("Bauer - A tool to automate BAU tasks")
@@ -22,6 +70,29 @@ func run() error {
 	cfg, err := config.Load()
 	if err != nil {
 		return fmt.Errorf("error loading configuration\n%w", err)
+	}
+
+	// 1b. Change to target repository if specified
+	if cfg.TargetRepo != "" {
+		// Convert credentials path to absolute before changing directory
+		absCredsPath, err := filepath.Abs(cfg.CredentialsPath)
+		if err != nil {
+			return fmt.Errorf("failed to resolve credentials path: %w", err)
+		}
+		cfg.CredentialsPath = absCredsPath
+
+		// Convert output directory to absolute before changing directory
+		absOutputDir, err := filepath.Abs(cfg.OutputDir)
+		if err != nil {
+			return fmt.Errorf("failed to resolve output directory path: %w", err)
+		}
+		cfg.OutputDir = absOutputDir
+
+		if err := os.Chdir(cfg.TargetRepo); err != nil {
+			return fmt.Errorf("failed to change to target repository %q: %w", cfg.TargetRepo, err)
+		}
+		cwd, _ := os.Getwd()
+		fmt.Printf("Working directory: %s\n\n", cwd)
 	}
 
 	// 2. Setup Logging
@@ -154,7 +225,9 @@ func run() error {
 }
 
 func main() {
-	if err := run(); err != nil {
+	runGithub()
+
+	if err := runBauer(); err != nil {
 		fmt.Fprintf(os.Stderr, "ERROR: %v\n", err)
 		os.Exit(1)
 	}
