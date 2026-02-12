@@ -5,6 +5,6 @@ import (
 )
 
 type RouteConfig struct {
-	APIConfig 		APIConfig
-	Orchestrator 	orchestrator.Orchestrator
+	APIConfig    APIConfig
+	Orchestrator orchestrator.Orchestrator
 }

@@ -16,8 +16,8 @@ func RequestTrace(next http.Handler) http.Handler {
 			err := types.InternalError(err).Render(w, r)
 			if err != nil {
 				slog.Error("Failed rendering internal error response due to failed UUID generation: %w",
-				slog.String("error", err.Error()),
-			)
+					slog.String("error", err.Error()),
+				)
 			}
 			return
 		}

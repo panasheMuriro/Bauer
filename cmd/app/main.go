@@ -11,29 +11,28 @@ import (
 	"os"
 )
 
-
 func run() error {
 	logger := slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{
-		Level: slog.LevelDebug,
+		Level: slog.LevelInfo,
 	}))
 	slog.SetDefault(logger)
 	slog.Info("startup", "status", "initializing API")
 	defer slog.Info("shutdown complete")
 
-	orch := orchestrator.NewOrchestrator()
+	orchestrator := orchestrator.NewOrchestrator()
 	cfg, err := types.LoadConfig()
 	if err != nil {
 		slog.Error("failed to load config", "error", err.Error())
 		return err
 	}
 
-	rc := types.RouteConfig {
-		APIConfig: *cfg,
-		Orchestrator: orch,
+	rc := types.RouteConfig{
+		APIConfig:    *cfg,
+		Orchestrator: orchestrator,
 	}
 
 	mux := http.NewServeMux()
-	mux.HandleFunc("/api/v1/jobs", v1.JobPost(rc))
+	mux.HandleFunc("/api/v1/job", v1.JobPost(rc))
 	slog.Info("starting server", "address", ":8090")
 	err = http.ListenAndServe(":8090", middleware.RequestTrace(mux))
 
@@ -44,7 +43,6 @@ func run() error {
 	}
 	return nil
 }
-
 
 func main() {
 	if err := run(); err != nil {

@@ -23,25 +23,38 @@ type APIConfig struct {
 	SummaryModel string
 }
 
-
 func LoadConfig() (*APIConfig, error) {
 	credentialsPath := flag.String("credentials", "", "Path to service account JSON (required)")
 	baseOutputDir := flag.String("base-output-dir", "bauer-output", "Base path of directory for generated prompt files (default: bauer-output)")
 	model := flag.String("model", "gpt-5-mini-high", "Copilot model to use for sessions (default: gpt-5-mini-high)")
 	summaryModel := flag.String("summary-model", "gpt-5-mini-high", "Copilot model to use for summary session (default: gpt-5-mini-high)")
-	
+	configFile := flag.String("config", "", "Path to JSON config file")
+
 	flag.Parse()
+
+	if *configFile != "" {
+		cfg, err := config.LoadFromJSONFile(*configFile)
+		if err != nil {
+			return nil, err
+		}
+		return &APIConfig{
+			CredentialsPath: cfg.CredentialsPath,
+			BaseOutputDir:   cfg.OutputDir,
+			Model:           cfg.Model,
+			SummaryModel:    cfg.SummaryModel,
+		}, nil
+	}
 
 	if *credentialsPath == "" {
 		flag.Usage()
 		os.Exit(1)
 	}
 
-	cfg := &APIConfig {
+	cfg := &APIConfig{
 		CredentialsPath: *credentialsPath,
-		BaseOutputDir: *baseOutputDir,
-		Model: *model,
-		SummaryModel: *summaryModel,
+		BaseOutputDir:   *baseOutputDir,
+		Model:           *model,
+		SummaryModel:    *summaryModel,
 	}
 
 	if err := cfg.Validate(); err != nil {
@@ -53,4 +66,4 @@ func LoadConfig() (*APIConfig, error) {
 
 func (c *APIConfig) Validate() error {
 	return config.ValidateCredentialsPath(c.CredentialsPath)
-}	
+}

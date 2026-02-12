@@ -74,10 +74,6 @@ func (c *Config) Validate() error {
 		return errors.New("missing required field: doc_id")
 	}
 
-	if c.CredentialsPath == "" {
-		return errors.New("missing required field: credentials")
-	}
-
 	if c.ChunkSize <= 0 {
 		return errors.New("chunk_size must be greater than 0")
 	}
@@ -86,9 +82,6 @@ func (c *Config) Validate() error {
 }
 
 func ValidateCredentialsPath(path string) error {
-	if path == "" {
-		return errors.New("missing required flag: --credentials")
-	}
 	// Verify credentials file exists
 	info, err := os.Stat(path)
 	if os.IsNotExist(err) {

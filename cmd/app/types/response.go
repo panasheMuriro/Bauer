@@ -14,6 +14,10 @@ func Success() *Response {
 	return &Response{Code: http.StatusOK, Error: ""}
 }
 
+func Accepted() *Response {
+	return &Response{Code: http.StatusAccepted, Error: ""}
+}
+
 func BadRequest(err error) *Response {
 	return &Response{Code: http.StatusBadRequest, Error: err.Error()}
 }
