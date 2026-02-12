@@ -27,15 +27,6 @@ tasks:
       - go run cmd/bauer/main.go --doc-id "{{.DOC_ID}}" --credentials "{{.CREDS}}" --output-dir "{{.OUTPUT_DIR}}" --model "{{.MODEL}}"
     # requires:
     #   vars: [DOC_ID]
-
-  run-server:
-    desc: Run the bau server locally
-    vars:
-      CREDS: "bau-test-creds.json"
-      PORT: "8080"
-      DOC_ID: "1WJ-N_Xkkx4r_6knxW7h200oIDyi4mVMzgh1xYt5xaU0"
-    cmds:
-      - go run ./cmd/api/main.go -addr :8080
   
   test-repo:
     desc: Check that test repo is created on /tmp/test-bauer-repo and has correct default branch
