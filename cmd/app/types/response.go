@@ -22,6 +22,10 @@ func BadRequest(err error) *Response {
 	return &Response{Code: http.StatusBadRequest, Error: err.Error()}
 }
 
+func NotAllowed(err error) *Response {
+	return &Response{Code: http.StatusMethodNotAllowed, Error: err.Error()}
+}
+
 func Forbidden(err error) *Response {
 	return &Response{Code: http.StatusForbidden, Error: err.Error()}
 }

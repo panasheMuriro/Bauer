@@ -13,7 +13,21 @@ import (
 
 func JobPost(rc types.RouteConfig) func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
-		requestID := r.Context().Value("requestID").(string)
+		requestID, ok := r.Context().Value("requestID").(string)
+		if !ok || requestID == "" {
+			err := types.InternalError(fmt.Errorf("missing request ID")).Render(w, r)
+			if err != nil {
+				slog.Error("error writing response", "error", err.Error())
+			}
+			return
+		}
+		if r.Method != "POST" {
+			err := types.NotAllowed(fmt.Errorf("invalid HTTP method: %s", r.Method)).Render(w, r)
+			if err != nil {
+				slog.Error("error writing response", "error", err.Error(), "requestID", requestID)
+			}
+			return
+		}
 		payload, err := getJobFromRequest(w, r, requestID)
 		if err != nil {
 			return
@@ -67,4 +81,14 @@ func executeJob(requestID string, cfg config.Config, rc types.RouteConfig) {
 	slog.Info("job executed successfully",
 		"requestID", requestID,
 	)
+}
+
+
+func GetHealth(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	err := types.Success().Render(w, r)
+	if err != nil {
+		slog.Error("error writing response", "error", err.Error())
+	}
 }

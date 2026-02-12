@@ -21,7 +21,10 @@ type APIConfig struct {
 	// SummaryModel is the Copilot model to use for the summary session.
 	// Default is "gpt-5-mini-high" if not specified.
 	SummaryModel string
-}
+
+	// TargetRepo is the path (relative or absolute) to the target repository
+	// where tasks should be executed. If not specified, uses the current directory.
+	TargetRepo string `json:"target_repo"`}
 
 func LoadConfig() (*APIConfig, error) {
 	credentialsPath := flag.String("credentials", "", "Path to service account JSON (required)")
@@ -29,6 +32,7 @@ func LoadConfig() (*APIConfig, error) {
 	model := flag.String("model", "gpt-5-mini-high", "Copilot model to use for sessions (default: gpt-5-mini-high)")
 	summaryModel := flag.String("summary-model", "gpt-5-mini-high", "Copilot model to use for summary session (default: gpt-5-mini-high)")
 	configFile := flag.String("config", "", "Path to JSON config file")
+	targetRepo := flag.String("target-repo", "", "Path to target repository where tasks should be executed (default: current directory)")
 
 	flag.Parse()
 
@@ -42,6 +46,7 @@ func LoadConfig() (*APIConfig, error) {
 			BaseOutputDir:   cfg.OutputDir,
 			Model:           cfg.Model,
 			SummaryModel:    cfg.SummaryModel,
+			TargetRepo:      cfg.TargetRepo,
 		}, nil
 	}
 
@@ -55,6 +60,7 @@ func LoadConfig() (*APIConfig, error) {
 		BaseOutputDir:   *baseOutputDir,
 		Model:           *model,
 		SummaryModel:    *summaryModel,
+		TargetRepo: 	 *targetRepo,
 	}
 
 	if err := cfg.Validate(); err != nil {
