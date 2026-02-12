@@ -23,6 +23,7 @@ func Load() (*Config, error) {
 	outputDir := flag.String("output-dir", "bauer-output", "Directory for generated prompt files (default: bauer-output)")
 	model := flag.String("model", "gpt-5-mini-high", "Copilot model to use for sessions (default: gpt-5-mini-high)")
 	summaryModel := flag.String("summary-model", "gpt-5-mini-high", "Copilot model to use for summary session (default: gpt-5-mini-high)")
+	targetRepo := flag.String("target-repo", "", "Path to target repository where tasks should be executed (default: current directory)")
 
 	// Custom usage message
 	flag.Usage = func() {
@@ -45,6 +46,7 @@ func Load() (*Config, error) {
 			{"--output-dir", "<string>", "Directory for generated prompt files (default: bauer-output)"},
 			{"--model", "<string>", "Copilot model to use for sessions (default: gpt-5-mini-high)"},
 			{"--summary-model", "<string>", "Copilot model to use for summary session (default: gpt-5-mini-high)"},
+			{"--target-repo", "<string>", "Path to target repository where tasks should be executed (default: current directory)"},
 		}
 
 		for _, f := range flags {
@@ -80,6 +82,7 @@ func Load() (*Config, error) {
 		OutputDir:       *outputDir,
 		Model:           *model,
 		SummaryModel:    *summaryModel,
+		TargetRepo:      *targetRepo,
 	}
 
 	if err := cfg.Validate(); err != nil {
