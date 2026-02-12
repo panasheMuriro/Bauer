@@ -256,7 +256,7 @@ func TestRenderChunk(t *testing.T) {
 
 	// Verify content contains expected sections
 	expectedStrings := []string{
-		"BAU Implementation Instructions",
+		"BAU Copy Update Implementation Instructions",
 		"Test Document",
 		"ubuntu.com/test/page",
 		"Chunk 1 of 2",
@@ -296,7 +296,7 @@ func TestRenderChunkWithPageRefresh(t *testing.T) {
 	// Verify content still contains expected sections
 	// (Both templates should have the same structure for now)
 	expectedStrings := []string{
-		"BAU Implementation Instructions",
+		"BAU Page Refresh Implementation Instructions",
 		"Test Document",
 		"ubuntu.com/test/page",
 		"Chunk 1 of 1",

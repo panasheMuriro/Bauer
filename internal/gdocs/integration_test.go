@@ -121,3 +121,160 @@ func TestFullExtractionIntegration(t *testing.T) {
 		t.Errorf("ID mismatch. Got %s, want %s", actualResult.DocumentID, expectedResult.DocumentID)
 	}
 }
+
+// TestMetadataSuggestionsSurviveProcessingFlow verifies metadata-table suggestions are preserved
+// through extraction, actionable conversion, and location grouping.
+func TestMetadataSuggestionsSurviveProcessingFlow(t *testing.T) {
+	const (
+		metadataSuggestionID = "meta-ins-1"
+		bodySuggestionID     = "body-ins-1"
+	)
+
+	doc := buildMetadataFlowTestDocument(metadataSuggestionID, bodySuggestionID)
+
+	suggestions := ExtractSuggestions(doc)
+	if len(suggestions) < 2 {
+		t.Fatalf("Expected at least 2 suggestions, got %d", len(suggestions))
+	}
+
+	metadata := ExtractMetadataTable(doc)
+	if metadata == nil {
+		t.Fatal("Expected metadata to be extracted, got nil")
+	}
+
+	docStructure := BuildDocumentStructure(doc)
+	actionableSuggestions := BuildActionableSuggestions(suggestions, docStructure, metadata)
+	groupedSuggestions := GroupActionableSuggestions(actionableSuggestions, docStructure)
+
+	if len(groupedSuggestions) == 0 {
+		t.Fatal("Expected grouped suggestions, got none")
+	}
+
+	if !hasMetadataLocation(groupedSuggestions) {
+		t.Fatal("Expected at least one grouped suggestion location with in_metadata=true")
+	}
+
+	if !hasSuggestionID(groupedSuggestions, metadataSuggestionID) {
+		t.Fatalf("Expected metadata suggestion ID %q to survive grouping", metadataSuggestionID)
+	}
+
+	if !hasSuggestionID(groupedSuggestions, bodySuggestionID) {
+		t.Fatalf("Expected non-metadata suggestion ID %q to be present", bodySuggestionID)
+	}
+}
+
+func buildMetadataFlowTestDocument(metadataSuggestionID, bodySuggestionID string) *docs.Document {
+	return &docs.Document{
+		Title:      "Metadata Flow Test",
+		DocumentId: "metadata-flow-doc",
+		Body: &docs.Body{
+			Content: []*docs.StructuralElement{
+				{
+					StartIndex: 1,
+					EndIndex:   150,
+					Table: &docs.Table{
+						TableRows: []*docs.TableRow{
+							{
+								StartIndex: 2,
+								EndIndex:   30,
+								TableCells: []*docs.TableCell{
+									{
+										StartIndex: 3,
+										EndIndex:   15,
+										Content: []*docs.StructuralElement{
+											paragraphWithText(3, 11, "Metadata"),
+										},
+									},
+									{
+										StartIndex: 16,
+										EndIndex:   29,
+										Content: []*docs.StructuralElement{
+											paragraphWithText(16, 17, "\n"),
+										},
+									},
+								},
+							},
+							{
+								StartIndex: 31,
+								EndIndex:   90,
+								TableCells: []*docs.TableCell{
+									{
+										StartIndex: 32,
+										EndIndex:   50,
+										Content: []*docs.StructuralElement{
+											paragraphWithText(32, 42, "Page title"),
+										},
+									},
+									{
+										StartIndex: 51,
+										EndIndex:   89,
+										Content: []*docs.StructuralElement{
+											paragraphWithText(51, 65, "Better title", metadataSuggestionID),
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+				{
+					StartIndex: 151,
+					EndIndex:   210,
+					Paragraph: &docs.Paragraph{
+						Elements: []*docs.ParagraphElement{
+							{
+								StartIndex: 151,
+								EndIndex:   166,
+								TextRun: &docs.TextRun{
+									Content:               "Body change",
+									SuggestedInsertionIds: []string{bodySuggestionID},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+}
+
+func paragraphWithText(startIndex, endIndex int64, text string, suggestedInsertionIDs ...string) *docs.StructuralElement {
+	textRun := &docs.TextRun{Content: text}
+	if len(suggestedInsertionIDs) > 0 {
+		textRun.SuggestedInsertionIds = suggestedInsertionIDs
+	}
+
+	return &docs.StructuralElement{
+		Paragraph: &docs.Paragraph{
+			Elements: []*docs.ParagraphElement{
+				{
+					StartIndex: startIndex,
+					EndIndex:   endIndex,
+					TextRun:    textRun,
+				},
+			},
+		},
+	}
+}
+
+func hasMetadataLocation(groups []LocationGroupedSuggestions) bool {
+	for _, group := range groups {
+		if group.Location.InMetadata {
+			return true
+		}
+	}
+
+	return false
+}
+
+func hasSuggestionID(groups []LocationGroupedSuggestions, suggestionID string) bool {
+	for _, group := range groups {
+		for _, suggestion := range group.Suggestions {
+			if suggestion.ID == suggestionID {
+				return true
+			}
+		}
+	}
+
+	return false
+}
