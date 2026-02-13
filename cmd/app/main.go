@@ -5,11 +5,11 @@ import (
 	"bauer/cmd/app/types"
 	v1 "bauer/cmd/app/v1"
 	"bauer/internal/orchestrator"
+	"bauer/internal/workflow"
 	"fmt"
 	"log/slog"
 	"net/http"
 	"os"
-	"path/filepath"
 )
 
 func run() error {
@@ -27,28 +27,6 @@ func run() error {
 		return err
 	}
 
-	if cfg.TargetRepo != "" {
-		// Convert credentials path to absolute before changing directory
-		absCredsPath, err := filepath.Abs(cfg.CredentialsPath)
-		if err != nil {
-			return fmt.Errorf("failed to resolve credentials path: %w", err)
-		}
-		cfg.CredentialsPath = absCredsPath
-
-		// Convert output directory to absolute before changing directory
-		absOutputDir, err := filepath.Abs(cfg.BaseOutputDir)
-		if err != nil {
-			return fmt.Errorf("failed to resolve output directory path: %w", err)
-		}
-		cfg.BaseOutputDir = absOutputDir
-
-		if err := os.Chdir(cfg.TargetRepo); err != nil {
-			return fmt.Errorf("failed to change to target repository %q: %w", cfg.TargetRepo, err)
-		}
-		cwd, _ := os.Getwd()
-		slog.Info("Working directory", "path", cwd)
-	}
-
 	rc := types.RouteConfig{
 		APIConfig:    *cfg,
 		Orchestrator: orchestrator,
@@ -57,6 +35,7 @@ func run() error {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/api/v1/job", v1.JobPost(rc))
 	mux.HandleFunc("/api/v1/health", v1.GetHealth)
+	mux.HandleFunc("/api/v1/workflow", workflow.ExecuteWorkflowHandler(orchestrator))
 	slog.Info("starting server", "address", ":8090")
 	err = http.ListenAndServe(":8090", middleware.RequestTrace(mux))
 

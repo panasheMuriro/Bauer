@@ -2,13 +2,9 @@ version: "3"
 
 tasks:
   build:
-    desc: Build the Bauer binary
+    desc: Build the Bauer and Bauer API binaries
     cmds:
       - go build -o bauer cmd/bauer/main.go
-
-  build-api:
-    desc: Build the API server binary
-    cmds:
       - go build -o bauer-api cmd/app/main.go
 
   test:
@@ -21,22 +17,10 @@ tasks:
     cmds:
       - gofmt -w .
 
-  run:
-    desc: Run the bau tool locally with specified document ID
-    vars:
-      CREDS: "bau-test-creds.json"
-      DOC_ID: "1WJ-N_Xkkx4r_6knxW7h200oIDyi4mVMzgh1xYt5xaU0"
-      OUTPUT_DIR: "bauer-output"
-      MODEL: "gpt-5-mini-high"
+  run-server:
+    desc: Run the API server locally
     cmds:
-      - go run cmd/bauer/main.go --doc-id "{{.DOC_ID}}" --credentials "{{.CREDS}}" --output-dir "{{.OUTPUT_DIR}}" --model "{{.MODEL}}"
-    # requires:
-    #   vars: [DOC_ID]
-  
-  test-repo:
-    desc: Check that test repo is created on /tmp/test-bauer-repo and has correct default branch
-    cmds:
-      - cd /tmp/test-bauer-repo/ && git branch --show-current
+      - ./bauer-api --config config.json
 
   clean:
     desc: Clean up generated files
@@ -45,3 +29,10 @@ tasks:
       - rm -f bauer
       - rm -f bauer.log
       - rm -rf /tmp/gh* /tmp/tmp* /tmp/test-bauer-repo* || true
+
+  run:
+    desc: Clean up generated files, build and run Bauer server
+    cmds:
+      - task: clean
+      - task: build
+      - task: run-server

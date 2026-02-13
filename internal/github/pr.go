@@ -2,6 +2,8 @@ package github
 
 import (
 	"fmt"
+	"log/slog"
+	"os"
 	"os/exec"
 	"strings"
 )
@@ -63,16 +65,39 @@ func CreatePR(owner, repo string, opts CreatePROptions) (string, error) {
 	}
 
 	cmd := exec.Command("gh", args...)
+	
+	// Log token availability for debugging
+	logger := slog.Default()
+	ghToken := os.Getenv("GH_TOKEN")
+	if ghToken == "" {
+		ghToken = os.Getenv("GITHUB_TOKEN")
+	}
+	if ghToken == "" {
+		logger.Warn("No GH_TOKEN or GITHUB_TOKEN environment variable set for PR creation")
+	} else {
+		logger.Debug("GH_TOKEN is set for PR creation", "token_prefix", ghToken[:10])
+	}
+	
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		return "", fmt.Errorf("failed to create PR: %w, output: %s", err, output)
 	}
 
 	// Extract PR URL from output
-	// Output format: "https://github.com/owner/repo/pull/123"
-	prURL := strings.TrimSpace(string(output))
-	if !strings.HasPrefix(prURL, "https://github.com/") {
-		return "", fmt.Errorf("unexpected PR creation output: %s", prURL)
+	// Output may contain warnings, so look for the URL pattern
+	outputStr := string(output)
+	lines := strings.Split(outputStr, "\n")
+	var prURL string
+	for _, line := range lines {
+		trimmed := strings.TrimSpace(line)
+		if strings.HasPrefix(trimmed, "https://github.com/") {
+			prURL = trimmed
+			break
+		}
+	}
+
+	if prURL == "" {
+		return "", fmt.Errorf("could not extract PR URL from output: %s", outputStr)
 	}
 
 	return prURL, nil
