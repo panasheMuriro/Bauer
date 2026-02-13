@@ -63,11 +63,6 @@ func (c *Client) ProcessDocument(ctx context.Context, docID string) (*Processing
 	groupedSuggestions = ResolveGroupedConflicts(groupedSuggestions)
 	slog.Info("Conflicts resolved", slog.Int("location_groups_remaining", len(groupedSuggestions)))
 
-	// Filter out suggestions in the metadata table
-	// TODO need to remove this filtering and add instructions on how exactly to approach metadata fields
-	groupedSuggestions = FilterMetadataSuggestions(groupedSuggestions)
-	slog.Info("Filtered metadata suggestions", slog.Int("location_groups_remaining", len(groupedSuggestions)))
-
 	return &ProcessingResult{
 		DocumentTitle:         doc.Title,
 		DocumentID:            doc.DocumentId,
