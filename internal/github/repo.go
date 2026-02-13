@@ -168,6 +168,18 @@ func CommitChanges(localPath, message string) error {
 		return fmt.Errorf("failed to stage changes: %w, output: %s", err, output)
 	}
 
+	// Exclude specific files from commit
+	excludeFiles := []string{
+		"bauer-doc-suggestions.json",
+		"bauer-output/",
+	}
+	for _, file := range excludeFiles {
+		cmd := exec.Command("git", "reset", "HEAD", file)
+		cmd.Dir = localPath
+		// Ignore error if file doesn't exist
+		cmd.CombinedOutput()
+	}
+
 	// Check if there are changes to commit
 	status, err := GetStatus(localPath)
 	if err != nil {

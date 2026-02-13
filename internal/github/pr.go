@@ -69,10 +69,20 @@ func CreatePR(owner, repo string, opts CreatePROptions) (string, error) {
 	}
 
 	// Extract PR URL from output
-	// Output format: "https://github.com/owner/repo/pull/123"
-	prURL := strings.TrimSpace(string(output))
-	if !strings.HasPrefix(prURL, "https://github.com/") {
-		return "", fmt.Errorf("unexpected PR creation output: %s", prURL)
+	// Output may contain warnings, so look for the URL pattern
+	outputStr := string(output)
+	lines := strings.Split(outputStr, "\n")
+	var prURL string
+	for _, line := range lines {
+		trimmed := strings.TrimSpace(line)
+		if strings.HasPrefix(trimmed, "https://github.com/") {
+			prURL = trimmed
+			break
+		}
+	}
+
+	if prURL == "" {
+		return "", fmt.Errorf("could not extract PR URL from output: %s", outputStr)
 	}
 
 	return prURL, nil

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log/slog"
 	"os"
+	"path/filepath"
 	"time"
 
 	"bauer/internal/config"
@@ -117,6 +118,24 @@ func ExecuteWorkflow(ctx context.Context, input WorkflowInput, orch orchestrator
 	logger.Info("workflow success: GitHub setup successful")
 
 	// ============================================
+	// Convert credentials path to absolute
+	// ============================================
+	// Do this before changing directory so relative paths work
+	var credentialsPath string
+	if input.Credentials != "" {
+		absPath, err := filepath.Abs(input.Credentials)
+		if err != nil {
+			output.Status = "failed"
+			output.Errors = append(output.Errors, fmt.Sprintf("failed to resolve credentials path: %v", err))
+			output.EndTime = time.Now()
+			output.TotalDuration = output.EndTime.Sub(output.StartTime)
+			return output, err
+		}
+		credentialsPath = absPath
+		logger.Info("workflow: resolved credentials path", "path", credentialsPath)
+	}
+
+	// ============================================
 	// Change to target repository directory
 	// ============================================
 	// Save original directory to restore later
@@ -149,13 +168,13 @@ func ExecuteWorkflow(ctx context.Context, input WorkflowInput, orch orchestrator
 	// 2.1 Create Bauer config with target repo (now current directory)
 	bauerCfg := &config.Config{
 		DocID:           input.DocID,
-		CredentialsPath: input.Credentials,
+		CredentialsPath: credentialsPath, // Use absolute path
 		DryRun:          input.DryRun,
 		ChunkSize:       input.ChunkSize,
 		PageRefresh:     input.PageRefresh,
 		OutputDir:       input.OutputDir,
 		Model:           input.Model,
-		TargetRepo:      ".",  // Current directory is the cloned repo
+		TargetRepo:      ".", // Current directory is the cloned repo
 	}
 
 	logger.Info("workflow: Bauer target repository set at", "path", bauerCfg.TargetRepo)
@@ -198,7 +217,7 @@ func ExecuteWorkflow(ctx context.Context, input WorkflowInput, orch orchestrator
 
 	commitMessage := fmt.Sprintf("Apply BAU suggestions from doc %s", input.DocID)
 	prTitle := fmt.Sprintf("Apply BAU suggestions to %s", githubSetupOutput.Repo.Name)
-	prBody := fmt.Sprintf("Automated changes from BAU review\n\nGDoc ID: %s", input.DocID)
+	prBody := fmt.Sprintf("Automated copy update changes from Bauer\n\nGDoc ID: %s", input.DocID)
 
 	finalizationInput := github.GitHubFinalizationInput{
 		LocalRepoPath: input.LocalRepoPath,
