@@ -106,8 +106,7 @@ func ExecuteWorkflow(ctx context.Context, input WorkflowInput, orch orchestrator
 		output.TotalDuration = output.EndTime.Sub(output.StartTime)
 		return output, err
 	}
-
-	// Store Phase 1 results
+	// Store GH setup results
 	output.RepositoryInfo.Owner = githubSetupOutput.Repo.Owner
 	output.RepositoryInfo.Repo = githubSetupOutput.Repo.Name
 	output.RepositoryInfo.LocalPath = githubSetupOutput.LocalPath
@@ -117,9 +116,7 @@ func ExecuteWorkflow(ctx context.Context, input WorkflowInput, orch orchestrator
 
 	logger.Info("workflow success: GitHub setup successful")
 
-	// ============================================
 	// Convert credentials path to absolute
-	// ============================================
 	// Do this before changing directory so relative paths work
 	var credentialsPath string
 	if input.Credentials != "" {
@@ -135,9 +132,7 @@ func ExecuteWorkflow(ctx context.Context, input WorkflowInput, orch orchestrator
 		logger.Info("workflow: resolved credentials path", "path", credentialsPath)
 	}
 
-	// ============================================
 	// Change to target repository directory
-	// ============================================
 	// Save original directory to restore later
 	originalDir, err := os.Getwd()
 	if err != nil {
@@ -158,14 +153,12 @@ func ExecuteWorkflow(ctx context.Context, input WorkflowInput, orch orchestrator
 	logger.Info("workflow: changed to cloned repository", "path", input.LocalRepoPath)
 	defer os.Chdir(originalDir)
 
-	// ============================================
-	// Phase 2: Bauer Processing
-	// ============================================
+	// Bauer processing
 	logger.Info("workflow: starting phase 2 - Bauer processing")
 
 	bauerStartTime := time.Now()
 
-	// 2.1 Create Bauer config with target repo (now current directory)
+	// Create Bauer config with target repo (now current directory)
 	bauerCfg := &config.Config{
 		DocID:           input.DocID,
 		CredentialsPath: credentialsPath, // Use absolute path
@@ -179,7 +172,7 @@ func ExecuteWorkflow(ctx context.Context, input WorkflowInput, orch orchestrator
 
 	logger.Info("workflow: Bauer target repository set at", "path", bauerCfg.TargetRepo)
 
-	// 2.2 Execute Bauer orchestration
+	// Execute Bauer orchestration
 	bauerResult, err := orch.Execute(ctx, bauerCfg)
 	if err != nil {
 		output.Status = "partial"
@@ -188,7 +181,7 @@ func ExecuteWorkflow(ctx context.Context, input WorkflowInput, orch orchestrator
 		// Continue anyway - we can still commit what we have
 	}
 
-	// Store Phase 2 results
+	// Store Bauer results
 	if bauerResult != nil {
 		output.BauerResult.ExtractionDuration = bauerResult.ExtractionDuration
 		output.BauerResult.PlanDuration = bauerResult.PlanDuration
@@ -234,7 +227,7 @@ func ExecuteWorkflow(ctx context.Context, input WorkflowInput, orch orchestrator
 
 	finalizationOutput, _ := github.FinalizeGitHubPhase(finalizationInput)
 
-	// Store Phase 3 results
+	// Store GH PR results
 	output.FinalizationInfo.CommitMessage = finalizationOutput.CommitMessage
 	output.FinalizationInfo.BranchPushed = finalizationOutput.BranchPushed
 	output.FinalizationInfo.PullRequest.URL = finalizationOutput.PullRequest.URL
@@ -246,9 +239,6 @@ func ExecuteWorkflow(ctx context.Context, input WorkflowInput, orch orchestrator
 
 	logger.Info("workflow: phase 3 complete - GitHub finalization finished")
 
-	// ============================================
-	// Summary
-	// ============================================
 	output.EndTime = time.Now()
 	output.TotalDuration = output.EndTime.Sub(output.StartTime)
 

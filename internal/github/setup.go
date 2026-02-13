@@ -28,16 +28,17 @@ type GitHubSetupOutput struct {
 func SetupGitHubPhase(input GitHubSetupInput) (*GitHubSetupOutput, error) {
 	logger := slog.Default()
 
-	// Validate GH CLI installation and authentication
+	// Validate GH CLI installation
 	if !IsGhCLIInstalled() {
 		return nil, fmt.Errorf("gh CLI not installed. Please install it from https://cli.github.com")
 	}
 	logger.Info("github setup: gh CLI detected")
 
-	if err := ValidateGitHubAuth(); err != nil {
-		return nil, fmt.Errorf("GitHub authentication failed: %w. Run 'gh auth login' to authenticate", err)
+	// Setup GitHub authentication with provided token
+	if err := SetupGitHubAuth(input.GitHubToken); err != nil {
+		return nil, fmt.Errorf("failed to setup GitHub auth: %w", err)
 	}
-	logger.Info("github setup: GitHub authenticated")
+	logger.Info("github setup: authentication configured")
 
 	// Parse repository
 	repo, err := ParseGitHubRepo(input.GitHubRepo)
@@ -45,12 +46,6 @@ func SetupGitHubPhase(input GitHubSetupInput) (*GitHubSetupOutput, error) {
 		return nil, fmt.Errorf("failed to parse GitHub repo: %w", err)
 	}
 	logger.Info("github setup: parsed repo", "owner", repo.Owner, "repo", repo.Name)
-
-	// Setup GitHub authentication
-	if err := SetupGitHubAuth(input.GitHubToken); err != nil {
-		return nil, fmt.Errorf("failed to setup GitHub auth: %w", err)
-	}
-	logger.Info("github setup: authentication configured")
 
 	// Clone/update repository
 	if err := CloneOrUpdateRepo(repo, input.LocalRepoPath); err != nil {
