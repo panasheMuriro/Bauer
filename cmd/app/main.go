@@ -5,6 +5,7 @@ import (
 	"bauer/cmd/app/types"
 	v1 "bauer/cmd/app/v1"
 	"bauer/internal/orchestrator"
+	"bauer/internal/workflow"
 	"fmt"
 	"log/slog"
 	"net/http"
@@ -57,6 +58,7 @@ func run() error {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/api/v1/job", v1.JobPost(rc))
 	mux.HandleFunc("/api/v1/health", v1.GetHealth)
+	mux.HandleFunc("/api/v1/workflow", workflow.ExecuteWorkflowHandler(orchestrator))
 	slog.Info("starting server", "address", ":8090")
 	err = http.ListenAndServe(":8090", middleware.RequestTrace(mux))
 
