@@ -5,11 +5,39 @@ import (
 	"bauer/internal/orchestrator"
 	"bauer/internal/workflow"
 	"context"
+	"flag"
 	"fmt"
 	"os"
+	"strings"
 )
 
 func main() {
+	// Parse CLI flags
+	githubRepo := flag.String("github-repo", "", "GitHub repository (owner/repo or HTTPS URL)")
+	docID := flag.String("doc-id", "", "Google Doc ID")
+	credentialsPath := flag.String("credentials", "bau-test-creds.json", "Path to service account credentials JSON")
+	localRepoPath := flag.String("local-repo-path", "/tmp/ubuntu.com", "Local path for cloned repository")
+	dryRun := flag.Bool("dry-run", false, "Perform a dry run without creating PR")
+	outputDir := flag.String("output-dir", "bauer-output", "Output directory for Bauer results")
+	branchPrefix := flag.String("branch-prefix", "bauer", "Branch naming prefix")
+
+	flag.Parse()
+
+	// Validate required flags
+	if *githubRepo == "" {
+		fmt.Fprintf(os.Stderr, "ERROR: --github-repo is required\n")
+		os.Exit(1)
+	}
+	if *docID == "" {
+		fmt.Fprintf(os.Stderr, "ERROR: --doc-id is required\n")
+		os.Exit(1)
+	}
+
+	fmt.Println(strings.Repeat("=", 80))
+	fmt.Println("Bauer - A tool to automate BAU tasks")
+	fmt.Println(strings.Repeat("=", 80))
+	fmt.Println()
+
 	// Create workflow input from CLI flags/config
 	ghToken, err := github.GetGitHubToken()
 	if err != nil {
@@ -18,14 +46,14 @@ func main() {
 	}
 
 	workflowInput := workflow.WorkflowInput{
-		GitHubRepo:    "canonical/ubuntu.com",
+		GitHubRepo:    *githubRepo,
 		GitHubToken:   ghToken,
-		BranchPrefix:  "bauer",
-		DocID:         "16AMRADqnW2Ssi1zYL68LqBB3__VIkL9Jegv-ZubWTGg",
-		Credentials:   "bau-test-creds.json",
-		LocalRepoPath: "/tmp/ubuntu.com",
-		DryRun:        false,
-		OutputDir:     "bauer-output",
+		BranchPrefix:  *branchPrefix,
+		DocID:         *docID,
+		Credentials:   *credentialsPath,
+		LocalRepoPath: *localRepoPath,
+		DryRun:        *dryRun,
+		OutputDir:     *outputDir,
 	}
 
 	orch := orchestrator.NewOrchestrator()
