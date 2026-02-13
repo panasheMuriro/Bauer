@@ -4,6 +4,7 @@ import (
 	"bauer/internal/config"
 	"bauer/internal/github"
 	"bauer/internal/orchestrator"
+	"bauer/internal/workflow"
 	"context"
 	"fmt"
 	"log"
@@ -15,48 +16,23 @@ import (
 )
 
 func runGithub() {
-	// 1. Parse a GitHub repo (works with all 3 formats)
-	// Using default repo for now
-	defaultRepo := "canonical/canonical.com"
-	repo, err := github.ParseGitHubRepo(defaultRepo)
+	token, err := github.GetGitHubToken()
+	setupInput := github.GitHubSetupInput{
+		GitHubRepo:    "canonical/canonical.com",
+		GitHubToken:   token,
+		BranchPrefix:  "bauer",
+		LocalRepoPath: "/tmp/test-bauer-repo",
+	}
+
+	setupOutput, err := github.SetupGitHubPhase(setupInput)
 	if err != nil {
 		log.Fatal(err)
 	}
-	fmt.Printf("✅ Parsed: %s/%s\n", repo.Owner, repo.Name)
 
-	// 2. Check if gh CLI is installed
-	if !github.IsGhCLIInstalled() {
-		log.Fatal("❌ gh CLI not installed.")
-	}
-	fmt.Println("✅ gh CLI detected")
-
-	// 3. Validate GitHub authentication
-	if err := github.ValidateGitHubAuth(); err != nil {
-		log.Fatal("❌ Not authenticated. Run: gh auth login")
-	}
-	fmt.Println("✅ GitHub authenticated")
-
-	// 4. Clone/update repo (creates temp directory)
-	localPath := "/tmp/test-bauer-repo"
-	if err := github.CloneOrUpdateRepo(repo, localPath); err != nil {
-		log.Fatal(err)
-	}
-	fmt.Printf("✅ Repo ready at: %s\n", localPath)
-
-	// 5. Create feature branch
-	// Using default branch name for now
-	branchName := "bauer/test-phase1"
-	if err := github.CreateFeatureBranch(localPath, branchName); err != nil {
-		log.Fatal(err)
-	}
-	fmt.Printf("✅ Branch created: %s\n", branchName)
-
-	// 6. Check current branch
-	current, err := github.GetCurrentBranch(localPath)
-	if err != nil {
-		log.Fatal(err)
-	}
-	fmt.Printf("✅ Currently on: %s\n", current)
+	fmt.Printf("✅ Parsed: %s/%s\n", setupOutput.Repo.Owner, setupOutput.Repo.Name)
+	fmt.Printf("✅ Repo ready at: %s\n", setupOutput.LocalPath)
+	fmt.Printf("✅ Branch created: %s\n", setupOutput.BranchName)
+	fmt.Printf("✅ Currently on: %s\n", setupOutput.CurrentBranch)
 }
 
 func runBauer() error {
@@ -225,10 +201,41 @@ func runBauer() error {
 }
 
 func main() {
-	runGithub()
+	// Create workflow input from CLI flags/config
+	ghToken, err := github.GetGitHubToken()
+	workflowInput := workflow.WorkflowInput{
+		GitHubRepo:    "canonical/ubuntu.com",
+		GitHubToken:   ghToken,
+		BranchPrefix:  "bauer",
+		DocID:         "16AMRADqnW2Ssi1zYL68LqBB3__VIkL9Jegv-ZubWTGg",
+		Credentials:   "bau-test-creds.json",
+		LocalRepoPath: "/tmp/ubuntu.com",
+		DryRun:        false,
+		OutputDir:     "bauer-output",
+	}
 
-	if err := runBauer(); err != nil {
+	orch := orchestrator.NewOrchestrator()
+
+	// Execute the complete workflow
+	result, err := workflow.ExecuteWorkflow(context.Background(), workflowInput, orch)
+	if err != nil {
 		fmt.Fprintf(os.Stderr, "ERROR: %v\n", err)
 		os.Exit(1)
 	}
+
+	// Print results
+	fmt.Printf("Status: %s\n", result.Status)
+	fmt.Printf("Branch: %s\n", result.RepositoryInfo.BranchName)
+	fmt.Printf("PR: %s\n", result.FinalizationInfo.PullRequest.URL)
 }
+
+// func main() {
+// 	// Run github and create feature branch
+// 	runGithub()
+
+// 	// Run Bauer orchestration
+// 	if err := runBauer(); err != nil {
+// 		fmt.Fprintf(os.Stderr, "ERROR: %v\n", err)
+// 		os.Exit(1)
+// 	}
+// }
