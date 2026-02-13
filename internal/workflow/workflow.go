@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"os"
 	"time"
 
 	"bauer/internal/config"
@@ -116,13 +117,36 @@ func ExecuteWorkflow(ctx context.Context, input WorkflowInput, orch orchestrator
 	logger.Info("workflow success: GitHub setup successful")
 
 	// ============================================
+	// Change to target repository directory
+	// ============================================
+	// Save original directory to restore later
+	originalDir, err := os.Getwd()
+	if err != nil {
+		output.Status = "failed"
+		output.Errors = append(output.Errors, fmt.Sprintf("failed to get current directory: %v", err))
+		output.EndTime = time.Now()
+		output.TotalDuration = output.EndTime.Sub(output.StartTime)
+		return output, err
+	}
+
+	if err := os.Chdir(input.LocalRepoPath); err != nil {
+		output.Status = "failed"
+		output.Errors = append(output.Errors, fmt.Sprintf("failed to change to cloned repository: %v", err))
+		output.EndTime = time.Now()
+		output.TotalDuration = output.EndTime.Sub(output.StartTime)
+		return output, err
+	}
+	logger.Info("workflow: changed to cloned repository", "path", input.LocalRepoPath)
+	defer os.Chdir(originalDir)
+
+	// ============================================
 	// Phase 2: Bauer Processing
 	// ============================================
 	logger.Info("workflow: starting phase 2 - Bauer processing")
 
 	bauerStartTime := time.Now()
 
-	// 2.1 Create Bauer config with target repo
+	// 2.1 Create Bauer config with target repo (now current directory)
 	bauerCfg := &config.Config{
 		DocID:           input.DocID,
 		CredentialsPath: input.Credentials,
@@ -131,7 +155,7 @@ func ExecuteWorkflow(ctx context.Context, input WorkflowInput, orch orchestrator
 		PageRefresh:     input.PageRefresh,
 		OutputDir:       input.OutputDir,
 		Model:           input.Model,
-		TargetRepo:      input.LocalRepoPath,
+		TargetRepo:      ".",  // Current directory is the cloned repo
 	}
 
 	logger.Info("workflow: Bauer target repository set at", "path", bauerCfg.TargetRepo)

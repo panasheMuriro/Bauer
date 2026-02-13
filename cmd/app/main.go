@@ -10,7 +10,6 @@ import (
 	"log/slog"
 	"net/http"
 	"os"
-	"path/filepath"
 )
 
 func run() error {
@@ -26,28 +25,6 @@ func run() error {
 	if err != nil {
 		slog.Error("failed to load config", "error", err.Error())
 		return err
-	}
-
-	if cfg.TargetRepo != "" {
-		// Convert credentials path to absolute before changing directory
-		absCredsPath, err := filepath.Abs(cfg.CredentialsPath)
-		if err != nil {
-			return fmt.Errorf("failed to resolve credentials path: %w", err)
-		}
-		cfg.CredentialsPath = absCredsPath
-
-		// Convert output directory to absolute before changing directory
-		absOutputDir, err := filepath.Abs(cfg.BaseOutputDir)
-		if err != nil {
-			return fmt.Errorf("failed to resolve output directory path: %w", err)
-		}
-		cfg.BaseOutputDir = absOutputDir
-
-		if err := os.Chdir(cfg.TargetRepo); err != nil {
-			return fmt.Errorf("failed to change to target repository %q: %w", cfg.TargetRepo, err)
-		}
-		cwd, _ := os.Getwd()
-		slog.Info("Working directory", "path", cwd)
 	}
 
 	rc := types.RouteConfig{
